@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timetracker</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230c0c0d'/%3E%3Ctext y='78' x='10' font-size='80' fill='%235EEAD4' font-family='monospace'%3E%E2%88%91%3C/text%3E%3C/svg%3E">
+  <style>
+    html, body { margin: 0; padding: 0; background: #0c0c0d; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    #root { min-height: 100vh; }
+    #root:empty::before {
+      content: "LOADING…";
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(245,245,245,0.4);
+      font-family: ui-monospace, "SF Mono", monospace;
+      font-size: 11px; letter-spacing: 0.2em;
+    }
+    .__err__ {
+      position: fixed; inset: 20px;
+      background: #1a0a0a; color: #FCA5A5;
+      border: 1px solid #FCA5A5; padding: 20px;
+      font-family: ui-monospace, monospace; font-size: 12px;
+      white-space: pre-wrap; overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script>
+    window.addEventListener('error', function(e) {
+      const root = document.getElementById('root');
+      if (root && !root.children.length) {
+        root.innerHTML = '<div class="__err__">ERROR: ' + (e.message || e) + '</div>';
+      }
+    });
+  </script>
+
+  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+
+  <script>
+import { jsxDEV as _jsxDEV } from "react/jsx-dev-runtime";
+const {
+  useState,
+  useEffect,
+  useRef
+} = React;
+const ChevronLeft = ({
+  size = 16
+}) => /*#__PURE__*/_jsxDEV("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  children: /*#__PURE__*/_jsxDEV("polyline", {
+    points: "15 18 9 12 15 6"
+  }, void 0, false)
+}, void 0, false);
+const ChevronRight = ({
+  size = 16
+}) => /*#__PURE__*/_jsxDEV("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  children: /*#__PURE__*/_jsxDEV("polyline", {
+    points: "9 18 15 12 9 6"
+  }, void 0, false)
+}, void 0, false);
+const X = ({
+  size = 16
+}) => /*#__PURE__*/_jsxDEV("svg", {
+  xmlns: "http://www.w3.org/2000/svg",
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: "2",
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  children: [/*#__PURE__*/_jsxDEV("line", {
+    x1: "18",
+    y1: "6",
+    x2: "6",
+    y2: "18"
+  }, void 0, false), /*#__PURE__*/_jsxDEV("line", {
+    x1: "6",
+    y1: "6",
+    x2: "18",
+    y2: "18"
+  }, void 0, false)]
+}, void 0, true);
+const STORAGE_KEY = 'timetracker-v1';
+const DEFAULT_PROJECTS = [{
+  id: 'inview',
+  name: 'Inview',
+  color: '#5EEAD4',
+  rate: 0,
+  hoursPerDay: 8
+}, {
+  id: 'emg-sa',
+  name: 'EMG.SA',
+  color: '#FCA5A5',
+  rate: 0,
+  hoursPerDay: 8
+}];
+const COLOR_PALETTE = ['#5EEAD4', '#FCA5A5', '#FCD34D', '#A78BFA', '#86EFAC', '#93C5FD', '#F9A8D4', '#FDBA74'];
+const WEEKDAYS_SHORT = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'НД'];
+const WEEKDAY_FROM_DOW = ['НД', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
+const MONTHS_UK = ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'];
+function formatDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+function parseDateKey(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+function getMonthGrid(date) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  let firstDOW = firstDay.getDay() - 1;
+  if (firstDOW < 0) firstDOW = 6;
+  const dates = [];
+  for (let i = firstDOW; i > 0; i--) {
+    dates.push({
+      date: new Date(year, month, 1 - i),
+      currentMonth: false
+    });
+  }
+  for (let d = 1; d <= lastDay.getDate(); d++) {
+    dates.push({
+      date: new Date(year, month, d),
+      currentMonth: true
+    });
+  }
+  let nextDay = 1;
+  while (dates.length < 42) {
+    dates.push({
+      date: new Date(year, month + 1, nextDay++),
+      currentMonth: false
+    });
+  }
+  return dates;
+}
+function getRangeKeys(keyA, keyB) {
+  const a = parseDateKey(keyA);
+  const b = parseDateKey(keyB);
+  const [start, end] = a <= b ? [a, b] : [b, a];
+  const keys = [];
+  const cur = new Date(start);
+  while (cur <= end) {
+    keys.push(formatDate(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return keys;
+}
+function formatEuro(num) {
+  if (!num || isNaN(num)) return '0 €';
+  return new Intl.NumberFormat('uk-UA', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  }).format(num) + ' €';
+}
+function daysWord(n) {
+  if (n === 1) return 'день';
+  if (n >= 2 && n <= 4) return 'дні';
+  return 'днів';
+}
+function TimeTracker() {
+  const [view, setView] = useState('calendar');
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+  const [projects, setProjects] = useState(DEFAULT_PROJECTS);
+  const [days, setDays] = useState({});
+  const [weekendsByMonth, setWeekendsByMonth] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [popover, setPopover] = useState(null);
+  const [dragStart, setDragStart] = useState(null);
+  const [dragEnd, setDragEnd] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const popoverRef = useRef(null);
+  const [hoveredProject, setHoveredProject] = useState(null);
+  const [showAddProject, setShowAddProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [confirmingDelete, setConfirmingDelete] = useState(null);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (Array.isArray(data.projects) && data.projects.length > 0) {
+          setProjects(data.projects.map(p => ({
+            rate: 0,
+            hoursPerDay: 8,
+            ...p
+          })));
+        }
+        if (data.days && typeof data.days === 'object') {
+          setDays(data.days);
+        }
+        if (data.weekendsByMonth && typeof data.weekendsByMonth === 'object') {
+          setWeekendsByMonth(data.weekendsByMonth);
+        }
+      }
+    } catch (e) {
+      console.warn('Load failed:', e);
+    }
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    if (loading) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        projects,
+        days,
+        weekendsByMonth
+      }));
+    } catch (e) {
+      console.error('Save failed:', e);
+    }
+  }, [projects, days, weekendsByMonth, loading]);
+  useEffect(() => {
+    if (!isDragging) return;
+    function up() {
+      const keys = dragStart && dragEnd ? getRangeKeys(dragStart, dragEnd) : [];
+      if (keys.length > 0) {
+        setPopover({
+          anchor: dragEnd,
+          keys
+        });
+      }
+      setIsDragging(false);
+    }
+    document.addEventListener('mouseup', up);
+    return () => document.removeEventListener('mouseup', up);
+  }, [isDragging, dragStart, dragEnd]);
+  useEffect(() => {
+    if (!popover) return;
+    function handler(e) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target)) {
+        const cellEl = e.target.closest('[data-day-cell]');
+        if (!cellEl) {
+          setPopover(null);
+          setDragStart(null);
+          setDragEnd(null);
+        }
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [popover]);
+  function startDrag(key) {
+    setPopover(null);
+    setDragStart(key);
+    setDragEnd(key);
+    setIsDragging(true);
+  }
+  function dragOver(key) {
+    if (isDragging) setDragEnd(key);
+  }
+  function assignProjectToKeys(keys, projectId) {
+    setDays(prev => {
+      const next = {
+        ...prev
+      };
+      for (const k of keys) {
+        if (projectId === null) delete next[k];else next[k] = projectId;
+      }
+      return next;
+    });
+    setPopover(null);
+    setDragStart(null);
+    setDragEnd(null);
+  }
+  function addProject() {
+    const name = newProjectName.trim();
+    if (!name) return;
+    const usedColors = projects.map(p => p.color);
+    const availableColor = COLOR_PALETTE.find(c => !usedColors.includes(c)) || COLOR_PALETTE[projects.length % COLOR_PALETTE.length];
+    const id = `p-${Date.now()}`;
+    setProjects(prev => [...prev, {
+      id,
+      name,
+      color: availableColor,
+      rate: 0,
+      hoursPerDay: 8
+    }]);
+    setNewProjectName('');
+    setShowAddProject(false);
+  }
+  function removeProject(id) {
+    setProjects(prev => prev.filter(p => p.id !== id));
+    setDays(prev => {
+      const next = {};
+      for (const [k, v] of Object.entries(prev)) {
+        if (v !== id) next[k] = v;
+      }
+      return next;
+    });
+    setConfirmingDelete(null);
+  }
+  function updateProject(id, patch) {
+    setProjects(prev => prev.map(p => p.id === id ? {
+      ...p,
+      ...patch
+    } : p));
+  }
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const hideWeekends = weekendsByMonth[monthKey] === true;
+  const monthEntries = Object.entries(days).filter(([key]) => {
+    const [y, m] = key.split('-').map(Number);
+    return y === year && m - 1 === month;
+  });
+  const projectStats = projects.map(p => {
+    const count = monthEntries.filter(([_, pid]) => pid === p.id).length;
+    const total = count * (p.hoursPerDay || 0) * (p.rate || 0);
+    return {
+      ...p,
+      count,
+      total
+    };
+  });
+  const totalDays = monthEntries.length;
+  const grandTotal = projectStats.reduce((sum, p) => sum + p.total, 0);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let workdays = 0;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dow = new Date(year, month, d).getDay();
+    if (dow !== 0 && dow !== 6) workdays++;
+  }
+  const projectsById = Object.fromEntries(projects.map(p => [p.id, p]));
+  const monthLabel = `${MONTHS_UK[month]} ${year}`;
+  const rangeSet = dragStart && dragEnd ? new Set(getRangeKeys(dragStart, dragEnd)) : popover && popover.keys.length > 1 ? new Set(popover.keys) : null;
+  function goPrev() {
+    setCurrentMonth(new Date(year, month - 1, 1));
+  }
+  function goNext() {
+    setCurrentMonth(new Date(year, month + 1, 1));
+  }
+  function goToday() {
+    const now = new Date();
+    setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+  }
+  if (loading) return /*#__PURE__*/_jsxDEV("div", {
+    style: loadingStyle,
+    children: "LOADING…"
+  }, void 0, false);
+  return /*#__PURE__*/_jsxDEV("div", {
+    style: containerStyle,
+    children: [/*#__PURE__*/_jsxDEV("style", {
+      children: globalCSS
+    }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+      style: {
+        maxWidth: '1180px',
+        margin: '0 auto'
+      },
+      children: [/*#__PURE__*/_jsxDEV("header", {
+        style: {
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '32px',
+          flexWrap: 'wrap',
+          gap: '16px'
+        },
+        children: [/*#__PURE__*/_jsxDEV("div", {
+          children: [/*#__PURE__*/_jsxDEV("div", {
+            className: "caption",
+            style: {
+              marginBottom: '12px'
+            },
+            children: "─── TIMETRACKER ───"
+          }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+            style: {
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: '14px',
+              flexWrap: 'wrap'
+            },
+            children: [/*#__PURE__*/_jsxDEV("h1", {
+              style: titleStyle,
+              children: monthLabel
+            }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+              className: "mono dim-2",
+              style: {
+                fontSize: '14px',
+                letterSpacing: '0.05em'
+              },
+              children: [year, ".", String(month + 1).padStart(2, '0')]
+            }, void 0, true)]
+          }, void 0, true)]
+        }, void 0, true), /*#__PURE__*/_jsxDEV("div", {
+          style: {
+            display: 'flex',
+            gap: '6px',
+            alignItems: 'center'
+          },
+          children: [/*#__PURE__*/_jsxDEV("button", {
+            className: "icon-btn",
+            onClick: goPrev,
+            title: "Попередній місяць",
+            children: /*#__PURE__*/_jsxDEV(ChevronLeft, {
+              size: 16
+            }, void 0, false)
+          }, void 0, false), /*#__PURE__*/_jsxDEV("button", {
+            className: "btn",
+            onClick: goToday,
+            children: "Today"
+          }, void 0, false), /*#__PURE__*/_jsxDEV("button", {
+            className: "icon-btn",
+            onClick: goNext,
+            title: "Наступний місяць",
+            children: /*#__PURE__*/_jsxDEV(ChevronRight, {
+              size: 16
+            }, void 0, false)
+          }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+            style: {
+              width: '12px'
+            }
+          }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+            style: {
+              display: 'flex',
+              border: '1px solid rgba(255,255,255,0.1)'
+            },
+            children: [/*#__PURE__*/_jsxDEV("button", {
+              className: `btn-seg ${view === 'calendar' ? 'btn-seg-active' : ''}`,
+              onClick: () => setView('calendar'),
+              children: "Cal"
+            }, void 0, false), /*#__PURE__*/_jsxDEV("button", {
+              className: `btn-seg ${view === 'list' ? 'btn-seg-active' : ''}`,
+              onClick: () => setView('list'),
+              children: "List"
+            }, void 0, false)]
+          }, void 0, true), /*#__PURE__*/_jsxDEV("button", {
+            className: "btn",
+            onClick: () => setWeekendsByMonth(prev => ({
+              ...prev,
+              [monthKey]: !prev[monthKey]
+            })),
+            title: hideWeekends ? `Показати вихідні (${monthKey})` : `Приховати вихідні (${monthKey})`,
+            style: {
+              textDecoration: hideWeekends ? 'line-through' : 'none',
+              opacity: hideWeekends ? 0.55 : 1,
+              marginLeft: '4px'
+            },
+            children: "СБ·НД"
+          }, void 0, false)]
+        }, void 0, true)]
+      }, void 0, true), /*#__PURE__*/_jsxDEV("div", {
+        className: "mono",
+        style: statsRowStyle,
+        children: [/*#__PURE__*/_jsxDEV("span", {
+          children: ["∑\xA0\xA0", String(totalDays).padStart(2, '0'), "\xA0/\xA0", workdays, "\xA0днів"]
+        }, void 0, true), projectStats.map(p => /*#__PURE__*/_jsxDEV("span", {
+          style: {
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            cursor: 'default',
+            opacity: hoveredProject && hoveredProject !== p.id ? 0.3 : 1,
+            transition: 'opacity 0.15s'
+          },
+          onMouseEnter: () => setHoveredProject(p.id),
+          onMouseLeave: () => setHoveredProject(null),
+          children: [/*#__PURE__*/_jsxDEV("span", {
+            style: {
+              width: '7px',
+              height: '7px',
+              background: p.color,
+              display: 'inline-block'
+            }
+          }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+            children: [p.name.toUpperCase(), "\xA0\xA0", String(p.count).padStart(2, '0')]
+          }, void 0, true)]
+        }, p.id, true)), grandTotal > 0 && /*#__PURE__*/_jsxDEV("span", {
+          style: {
+            marginLeft: 'auto',
+            color: 'rgba(245,245,245,0.9)'
+          },
+          children: formatEuro(grandTotal)
+        }, void 0, false)]
+      }, void 0, true), /*#__PURE__*/_jsxDEV("div", {
+        style: mainGridStyle,
+        children: [/*#__PURE__*/_jsxDEV("div", {
+          style: {
+            minWidth: 0,
+            userSelect: isDragging ? 'none' : 'auto'
+          },
+          children: view === 'calendar' ? /*#__PURE__*/_jsxDEV(CalendarView, {
+            grid: getMonthGrid(currentMonth),
+            days: days,
+            projects: projects,
+            projectsById: projectsById,
+            popover: popover,
+            rangeSet: rangeSet,
+            onCellDown: startDrag,
+            onCellEnter: dragOver,
+            onAssign: pid => popover && assignProjectToKeys(popover.keys, pid),
+            hoveredProject: hoveredProject,
+            hideWeekends: hideWeekends,
+            popoverRef: popoverRef
+          }, void 0, false) : /*#__PURE__*/_jsxDEV(ListView, {
+            year: year,
+            month: month,
+            days: days,
+            projects: projects,
+            projectsById: projectsById,
+            popover: popover,
+            onDayClick: key => setPopover({
+              anchor: key,
+              keys: [key]
+            }),
+            onAssign: pid => popover && assignProjectToKeys(popover.keys, pid),
+            popoverRef: popoverRef
+          }, void 0, false)
+        }, void 0, false), /*#__PURE__*/_jsxDEV("aside", {
+          children: [/*#__PURE__*/_jsxDEV("div", {
+            className: "caption",
+            style: {
+              marginBottom: '14px'
+            },
+            children: "PROJECTS"
+          }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+            style: {
+              display: 'flex',
+              flexDirection: 'column'
+            },
+            children: projects.map(p => {
+              const stat = projectStats.find(s => s.id === p.id);
+              const isConfirming = confirmingDelete === p.id;
+              const isHovered = hoveredProject === p.id;
+              return /*#__PURE__*/_jsxDEV("div", {
+                className: "project-row",
+                onMouseEnter: () => setHoveredProject(p.id),
+                onMouseLeave: () => {
+                  setHoveredProject(null);
+                  if (isConfirming) setConfirmingDelete(null);
+                },
+                style: {
+                  background: isHovered ? 'rgba(255,255,255,0.02)' : 'transparent'
+                },
+                children: [/*#__PURE__*/_jsxDEV("span", {
+                  style: {
+                    width: '8px',
+                    height: '8px',
+                    background: p.color,
+                    flexShrink: 0
+                  }
+                }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+                  style: {
+                    flex: 1,
+                    fontSize: '13px',
+                    color: 'rgba(245,245,245,0.92)'
+                  },
+                  children: p.name
+                }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+                  className: "mono dim-2",
+                  style: {
+                    fontSize: '11px'
+                  },
+                  children: String(stat?.count || 0).padStart(2, '0')
+                }, void 0, false), projects.length > 1 && (isConfirming ? /*#__PURE__*/_jsxDEV("button", {
+                  className: "confirm-btn",
+                  onClick: () => removeProject(p.id),
+                  children: "DELETE?"
+                }, void 0, false) : /*#__PURE__*/_jsxDEV("button", {
+                  className: "icon-btn icon-btn-mini",
+                  onClick: () => setConfirmingDelete(p.id),
+                  title: "Видалити проєкт",
+                  children: /*#__PURE__*/_jsxDEV(X, {
+                    size: 12
+                  }, void 0, false)
+                }, void 0, false))]
+              }, p.id, true);
+            })
+          }, void 0, false), showAddProject ? /*#__PURE__*/_jsxDEV("div", {
+            style: {
+              marginTop: '14px'
+            },
+            children: [/*#__PURE__*/_jsxDEV("input", {
+              className: "input",
+              autoFocus: true,
+              value: newProjectName,
+              onChange: e => setNewProjectName(e.target.value),
+              onKeyDown: e => {
+                if (e.key === 'Enter') addProject();
+                if (e.key === 'Escape') {
+                  setShowAddProject(false);
+                  setNewProjectName('');
+                }
+              },
+              placeholder: "Назва проєкту"
+            }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+              className: "mono caption",
+              style: {
+                marginTop: '8px',
+                fontSize: '9px'
+              },
+              children: "ENTER додати · ESC скасувати"
+            }, void 0, false)]
+          }, void 0, true) : /*#__PURE__*/_jsxDEV("button", {
+            className: "btn",
+            onClick: () => setShowAddProject(true),
+            style: {
+              marginTop: '14px',
+              width: '100%'
+            },
+            children: "+ новий проєкт"
+          }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+            style: {
+              height: '40px'
+            }
+          }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+            className: "caption",
+            style: {
+              marginBottom: '18px'
+            },
+            children: "BILLING"
+          }, void 0, false), projects.length === 0 ? /*#__PURE__*/_jsxDEV("div", {
+            className: "dim-3",
+            style: {
+              fontSize: '12px'
+            },
+            children: "немає проєктів"
+          }, void 0, false) : /*#__PURE__*/_jsxDEV("div", {
+            style: {
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '24px'
+            },
+            children: [projects.map(p => {
+              const stat = projectStats.find(s => s.id === p.id);
+              return /*#__PURE__*/_jsxDEV(BillingBlock, {
+                project: p,
+                count: stat?.count || 0,
+                total: stat?.total || 0,
+                onUpdate: patch => updateProject(p.id, patch)
+              }, p.id, false);
+            }), /*#__PURE__*/_jsxDEV("div", {
+              style: {
+                borderTop: '1px solid rgba(255,255,255,0.15)',
+                paddingTop: '14px',
+                marginTop: '4px'
+              },
+              children: /*#__PURE__*/_jsxDEV("div", {
+                style: {
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline'
+                },
+                children: [/*#__PURE__*/_jsxDEV("span", {
+                  className: "caption",
+                  style: {
+                    fontSize: '10px'
+                  },
+                  children: "GRAND TOTAL"
+                }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+                  className: "mono",
+                  style: {
+                    fontSize: '17px',
+                    color: 'rgba(245,245,245,0.98)'
+                  },
+                  children: formatEuro(grandTotal)
+                }, void 0, false)]
+              }, void 0, true)
+            }, void 0, false)]
+          }, void 0, true), /*#__PURE__*/_jsxDEV("div", {
+            style: {
+              height: '32px'
+            }
+          }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+            className: "mono caption",
+            style: {
+              lineHeight: 1.7,
+              fontSize: '10px'
+            },
+            children: ["клік на день → вибрати проєкт", /*#__PURE__*/_jsxDEV("br", {}, void 0, false), "затисни і протягни → виділити декілька днів", /*#__PURE__*/_jsxDEV("br", {}, void 0, false), "данні зберігаються локально"]
+          }, void 0, true)]
+        }, void 0, true)]
+      }, void 0, true)]
+    }, void 0, true)]
+  }, void 0, true);
+}
+function BillingBlock({
+  project,
+  count,
+  total,
+  onUpdate
+}) {
+  const [rateInput, setRateInput] = useState(String(project.rate || ''));
+  useEffect(() => {
+    setRateInput(String(project.rate || ''));
+  }, [project.rate]);
+  function commitRate() {
+    const n = parseFloat(rateInput.replace(',', '.')) || 0;
+    onUpdate({
+      rate: n
+    });
+    setRateInput(n ? String(n) : '');
+  }
+  function setHours(h) {
+    const n = Math.max(0, Math.min(24, h));
+    onUpdate({
+      hoursPerDay: n
+    });
+  }
+  return /*#__PURE__*/_jsxDEV("div", {
+    children: [/*#__PURE__*/_jsxDEV("div", {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '12px'
+      },
+      children: [/*#__PURE__*/_jsxDEV("span", {
+        style: {
+          width: '6px',
+          height: '6px',
+          background: project.color,
+          flexShrink: 0
+        }
+      }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+        style: {
+          flex: 1,
+          fontSize: '13px',
+          color: 'rgba(245,245,245,0.92)'
+        },
+        children: project.name
+      }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+        className: "mono dim-2",
+        style: {
+          fontSize: '11px',
+          letterSpacing: '0.1em'
+        },
+        children: [String(count).padStart(2, '0'), "\xA0", daysWord(count).slice(0, 1).toUpperCase() + daysWord(count).slice(1)]
+      }, void 0, true)]
+    }, void 0, true), /*#__PURE__*/_jsxDEV("div", {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        paddingLeft: '14px',
+        borderLeft: `1px solid ${project.color}25`
+      },
+      children: [/*#__PURE__*/_jsxDEV("div", {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px'
+        },
+        children: [/*#__PURE__*/_jsxDEV("span", {
+          className: "caption",
+          style: {
+            fontSize: '10px'
+          },
+          children: "RATE"
+        }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+          style: {
+            position: 'relative',
+            width: '110px'
+          },
+          children: [/*#__PURE__*/_jsxDEV("input", {
+            className: "num-input mono",
+            type: "text",
+            inputMode: "decimal",
+            value: rateInput,
+            onChange: e => setRateInput(e.target.value),
+            onBlur: commitRate,
+            onKeyDown: e => {
+              if (e.key === 'Enter') e.target.blur();
+            },
+            placeholder: "0"
+          }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+            className: "mono",
+            style: {
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'rgba(245,245,245,0.4)',
+              fontSize: '12px',
+              pointerEvents: 'none'
+            },
+            children: "€"
+          }, void 0, false)]
+        }, void 0, true)]
+      }, void 0, true), /*#__PURE__*/_jsxDEV("div", {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px'
+        },
+        children: [/*#__PURE__*/_jsxDEV("span", {
+          className: "caption",
+          style: {
+            fontSize: '10px'
+          },
+          children: "HOURS/DAY"
+        }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+          style: {
+            display: 'flex',
+            alignItems: 'stretch',
+            border: '1px solid rgba(255,255,255,0.1)'
+          },
+          children: [/*#__PURE__*/_jsxDEV("button", {
+            className: "stepper-btn",
+            onClick: () => setHours((project.hoursPerDay || 0) - 1),
+            "aria-label": "−",
+            children: /*#__PURE__*/_jsxDEV(ChevronLeft, {
+              size: 12
+            }, void 0, false)
+          }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+            className: "mono",
+            style: {
+              minWidth: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '13px',
+              borderLeft: '1px solid rgba(255,255,255,0.1)',
+              borderRight: '1px solid rgba(255,255,255,0.1)'
+            },
+            children: project.hoursPerDay || 0
+          }, void 0, false), /*#__PURE__*/_jsxDEV("button", {
+            className: "stepper-btn",
+            onClick: () => setHours((project.hoursPerDay || 0) + 1),
+            "aria-label": "+",
+            children: /*#__PURE__*/_jsxDEV(ChevronRight, {
+              size: 12
+            }, void 0, false)
+          }, void 0, false)]
+        }, void 0, true)]
+      }, void 0, true), /*#__PURE__*/_jsxDEV("div", {
+        style: {
+          display: 'flex',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          paddingTop: '6px',
+          marginTop: '2px',
+          borderTop: '1px dashed rgba(255,255,255,0.08)'
+        },
+        children: [/*#__PURE__*/_jsxDEV("span", {
+          className: "mono dim-3",
+          style: {
+            fontSize: '10px',
+            letterSpacing: '0.08em'
+          },
+          children: [String(count).padStart(2, '0'), " × ", project.hoursPerDay || 0, " × ", project.rate || 0]
+        }, void 0, true), /*#__PURE__*/_jsxDEV("span", {
+          className: "mono",
+          style: {
+            fontSize: '13px',
+            color: project.color
+          },
+          children: formatEuro(total)
+        }, void 0, false)]
+      }, void 0, true)]
+    }, void 0, true)]
+  }, void 0, true);
+}
+function CalendarView({
+  grid,
+  days,
+  projects,
+  projectsById,
+  popover,
+  rangeSet,
+  onCellDown,
+  onCellEnter,
+  onAssign,
+  hoveredProject,
+  hideWeekends,
+  popoverRef
+}) {
+  const today = formatDate(new Date());
+  const weekdays = hideWeekends ? WEEKDAYS_SHORT.slice(0, 5) : WEEKDAYS_SHORT;
+  const cells = hideWeekends ? grid.filter(cell => {
+    const dow = cell.date.getDay();
+    return dow !== 0 && dow !== 6;
+  }) : grid;
+  const cols = hideWeekends ? 5 : 7;
+  return /*#__PURE__*/_jsxDEV("div", {
+    children: [/*#__PURE__*/_jsxDEV("div", {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        marginBottom: '10px'
+      },
+      children: weekdays.map(d => /*#__PURE__*/_jsxDEV("div", {
+        className: "mono dim-2",
+        style: {
+          fontSize: '10px',
+          letterSpacing: '0.18em',
+          textAlign: 'center',
+          padding: '4px 0'
+        },
+        children: d
+      }, d, false))
+    }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gap: 0,
+        borderTop: '1px solid rgba(255,255,255,0.06)',
+        borderLeft: '1px solid rgba(255,255,255,0.06)'
+      },
+      children: cells.map((cell, idx) => {
+        const key = formatDate(cell.date);
+        const projectId = days[key];
+        const project = projectId ? projectsById[projectId] : null;
+        const isToday = key === today;
+        const isOther = !cell.currentMonth;
+        const isAnchor = popover && popover.anchor === key;
+        const isInRange = rangeSet && rangeSet.has(key);
+        const isFaded = hoveredProject && projectId && projectId !== hoveredProject;
+        const isHighlightedByHover = hoveredProject && projectId === hoveredProject;
+        return /*#__PURE__*/_jsxDEV("div", {
+          "data-day-cell": key,
+          className: `day-cell ${isOther ? 'day-other' : ''} ${isToday ? 'day-today' : ''} ${isHighlightedByHover ? 'day-highlighted' : ''} ${isInRange ? 'day-in-range' : ''}`,
+          onMouseDown: e => {
+            if (!isOther) {
+              e.preventDefault();
+              onCellDown(key);
+            }
+          },
+          onMouseEnter: () => onCellEnter(key),
+          style: {
+            opacity: isFaded ? 0.25 : 1
+          },
+          children: [/*#__PURE__*/_jsxDEV("div", {
+            className: "mono",
+            style: {
+              fontSize: '14px',
+              color: project ? project.color : isOther ? 'rgba(245,245,245,0.18)' : 'rgba(245,245,245,0.85)',
+              letterSpacing: '0.02em',
+              fontWeight: project ? 500 : 400
+            },
+            children: String(cell.date.getDate()).padStart(2, '0')
+          }, void 0, false), project && /*#__PURE__*/_jsxDEV("div", {
+            style: {
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '2px',
+              background: project.color
+            }
+          }, void 0, false), isAnchor && /*#__PURE__*/_jsxDEV(Popover, {
+            popoverRef: popoverRef,
+            projects: projects,
+            currentProjectId: projectId,
+            keyCount: popover.keys.length,
+            onSelect: onAssign
+          }, void 0, false)]
+        }, idx, true);
+      })
+    }, void 0, false)]
+  }, void 0, true);
+}
+function ListView({
+  year,
+  month,
+  days,
+  projects,
+  projectsById,
+  popover,
+  onDayClick,
+  onAssign,
+  popoverRef
+}) {
+  const byProject = {};
+  for (const p of projects) byProject[p.id] = [];
+  Object.entries(days).forEach(([key, projectId]) => {
+    const [y, m, d] = key.split('-').map(Number);
+    if (y === year && m - 1 === month && byProject[projectId]) {
+      byProject[projectId].push({
+        key,
+        date: new Date(y, m - 1, d)
+      });
+    }
+  });
+  Object.values(byProject).forEach(arr => arr.sort((a, b) => a.date - b.date));
+  const totalEntries = Object.values(byProject).reduce((sum, arr) => sum + arr.length, 0);
+  if (totalEntries === 0) {
+    return /*#__PURE__*/_jsxDEV("div", {
+      className: "dim-3",
+      style: {
+        fontSize: '13px',
+        padding: '40px 0',
+        lineHeight: 1.5
+      },
+      children: ["Немає позначених днів у цьому місяці.", /*#__PURE__*/_jsxDEV("br", {}, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+        className: "mono",
+        style: {
+          fontSize: '11px',
+          letterSpacing: '0.1em',
+          color: 'rgba(245,245,245,0.25)'
+        },
+        children: "перейди в CAL → затисни і протягни по днях"
+      }, void 0, false)]
+    }, void 0, true);
+  }
+  return /*#__PURE__*/_jsxDEV("div", {
+    style: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '36px'
+    },
+    children: projects.map(p => {
+      const entries = byProject[p.id] || [];
+      if (entries.length === 0) return null;
+      return /*#__PURE__*/_jsxDEV("div", {
+        children: [/*#__PURE__*/_jsxDEV("div", {
+          style: {
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '12px',
+            marginBottom: '14px',
+            paddingBottom: '10px',
+            borderBottom: '1px solid rgba(255,255,255,0.08)'
+          },
+          children: [/*#__PURE__*/_jsxDEV("span", {
+            style: {
+              width: '8px',
+              height: '8px',
+              background: p.color,
+              display: 'inline-block'
+            }
+          }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+            style: {
+              fontSize: '15px',
+              color: 'rgba(245,245,245,0.95)'
+            },
+            children: p.name
+          }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+            className: "mono dim-2",
+            style: {
+              fontSize: '11px',
+              letterSpacing: '0.12em'
+            },
+            children: [String(entries.length).padStart(2, '0'), " ", daysWord(entries.length)]
+          }, void 0, true)]
+        }, void 0, true), /*#__PURE__*/_jsxDEV("div", {
+          style: {
+            display: 'flex',
+            flexDirection: 'column'
+          },
+          children: entries.map(({
+            key,
+            date
+          }) => {
+            const isAnchor = popover && popover.anchor === key;
+            return /*#__PURE__*/_jsxDEV("div", {
+              "data-day-cell": key,
+              onClick: () => onDayClick(key),
+              className: "list-row",
+              children: [/*#__PURE__*/_jsxDEV("span", {
+                className: "mono",
+                style: {
+                  fontSize: '14px',
+                  color: 'rgba(245,245,245,0.92)',
+                  width: '36px'
+                },
+                children: String(date.getDate()).padStart(2, '0')
+              }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+                className: "mono dim-2",
+                style: {
+                  fontSize: '11px',
+                  letterSpacing: '0.18em',
+                  width: '36px'
+                },
+                children: WEEKDAY_FROM_DOW[date.getDay()]
+              }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+                className: "mono",
+                style: {
+                  flex: 1,
+                  fontSize: '12px',
+                  color: 'rgba(245,245,245,0.45)',
+                  letterSpacing: '0.03em'
+                },
+                children: [String(date.getDate()).padStart(2, '0'), ".", String(month + 1).padStart(2, '0'), ".", year]
+              }, void 0, true), /*#__PURE__*/_jsxDEV("span", {
+                className: "mono dim-3 list-row-hint",
+                style: {
+                  fontSize: '10px',
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase'
+                },
+                children: "змінити"
+              }, void 0, false), isAnchor && /*#__PURE__*/_jsxDEV(Popover, {
+                popoverRef: popoverRef,
+                projects: projects,
+                currentProjectId: p.id,
+                keyCount: popover.keys.length,
+                onSelect: onAssign,
+                alignRight: true
+              }, void 0, false)]
+            }, key, true);
+          })
+        }, void 0, false)]
+      }, p.id, true);
+    })
+  }, void 0, false);
+}
+function Popover({
+  popoverRef,
+  projects,
+  currentProjectId,
+  keyCount,
+  onSelect,
+  alignRight
+}) {
+  const isBatch = keyCount > 1;
+  return /*#__PURE__*/_jsxDEV("div", {
+    ref: popoverRef,
+    onMouseDown: e => e.stopPropagation(),
+    onClick: e => e.stopPropagation(),
+    style: {
+      position: 'absolute',
+      top: '100%',
+      ...(alignRight ? {
+        right: 0
+      } : {
+        left: '50%',
+        transform: 'translateX(-50%)'
+      }),
+      marginTop: '6px',
+      background: '#17171a',
+      border: '1px solid rgba(255,255,255,0.15)',
+      padding: '6px',
+      zIndex: 100,
+      boxShadow: '0 8px 28px rgba(0,0,0,0.6)',
+      minWidth: '180px'
+    },
+    children: [/*#__PURE__*/_jsxDEV("div", {
+      className: "mono caption",
+      style: {
+        padding: '4px 8px 8px',
+        fontSize: '9px'
+      },
+      children: isBatch ? `ВИБРАТИ ПРОЄКТ · ${keyCount} ${daysWord(keyCount).toUpperCase()}` : 'ВИБРАТИ ПРОЄКТ'
+    }, void 0, false), projects.map(p => /*#__PURE__*/_jsxDEV("div", {
+      className: "popover-item",
+      onClick: () => onSelect(p.id),
+      style: {
+        background: p.id === currentProjectId && !isBatch ? 'rgba(255,255,255,0.05)' : 'transparent'
+      },
+      children: [/*#__PURE__*/_jsxDEV("span", {
+        style: {
+          width: '8px',
+          height: '8px',
+          background: p.color,
+          flexShrink: 0
+        }
+      }, void 0, false), /*#__PURE__*/_jsxDEV("span", {
+        style: {
+          fontSize: '13px',
+          flex: 1
+        },
+        children: p.name
+      }, void 0, false), p.id === currentProjectId && !isBatch && /*#__PURE__*/_jsxDEV("span", {
+        className: "mono dim-2",
+        style: {
+          fontSize: '9px'
+        },
+        children: "●"
+      }, void 0, false)]
+    }, p.id, true)), /*#__PURE__*/_jsxDEV("div", {
+      style: {
+        height: '1px',
+        background: 'rgba(255,255,255,0.06)',
+        margin: '4px 0'
+      }
+    }, void 0, false), /*#__PURE__*/_jsxDEV("div", {
+      className: "popover-item popover-clear",
+      onClick: () => onSelect(null),
+      children: /*#__PURE__*/_jsxDEV("span", {
+        className: "mono",
+        style: {
+          fontSize: '11px',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase'
+        },
+        children: "× очистити"
+      }, void 0, false)
+    }, void 0, false)]
+  }, void 0, true);
+}
+const containerStyle = {
+  background: '#0c0c0d',
+  color: 'rgba(245,245,245,0.95)',
+  minHeight: '100vh',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif',
+  fontSize: '13px',
+  letterSpacing: '0.005em',
+  padding: '40px 28px 80px',
+  position: 'relative'
+};
+const loadingStyle = {
+  background: '#0c0c0d',
+  color: 'rgba(245,245,245,0.4)',
+  minHeight: '100vh',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontFamily: 'ui-monospace, "SF Mono", monospace',
+  fontSize: '11px',
+  letterSpacing: '0.2em'
+};
+const titleStyle = {
+  fontSize: '28px',
+  fontWeight: 400,
+  letterSpacing: '-0.01em',
+  color: 'rgba(245,245,245,0.98)',
+  margin: 0
+};
+const statsRowStyle = {
+  display: 'flex',
+  gap: '28px',
+  alignItems: 'center',
+  marginBottom: '40px',
+  fontSize: '11px',
+  letterSpacing: '0.12em',
+  color: 'rgba(245,245,245,0.7)',
+  textTransform: 'uppercase',
+  flexWrap: 'wrap',
+  paddingBottom: '20px',
+  borderBottom: '1px solid rgba(255,255,255,0.06)'
+};
+const mainGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) 280px',
+  gap: '48px'
+};
+const globalCSS = `
+  .mono { font-family: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace; font-feature-settings: "tnum" 1, "zero" 1, "cv01" 1; }
+  .caption { font-family: ui-monospace, "SF Mono", monospace; font-size: 10px; letter-spacing: 0.2em; color: rgba(245,245,245,0.4); text-transform: uppercase; }
+  .dim-2 { color: rgba(245,245,245,0.5); }
+  .dim-3 { color: rgba(245,245,245,0.3); }
+
+  .btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(245,245,245,0.7);
+    padding: 6px 12px;
+    border-radius: 0;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn:hover { border-color: rgba(255,255,255,0.3); color: rgba(245,245,245,0.95); }
+
+  .btn-seg {
+    background: transparent;
+    border: none;
+    color: rgba(245,245,245,0.55);
+    padding: 6px 14px;
+    font-family: ui-monospace, "SF Mono", monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .btn-seg:hover { color: rgba(245,245,245,0.9); }
+  .btn-seg-active { background: rgba(255,255,255,0.06); color: rgba(245,245,245,1); }
+
+  .icon-btn {
+    background: transparent; border: none; color: rgba(245,245,245,0.5);
+    cursor: pointer; padding: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: color 0.15s;
+  }
+  .icon-btn:hover { color: rgba(245,245,245,0.95); }
+  .icon-btn-mini { padding: 2px; opacity: 0; transition: opacity 0.15s, color 0.15s; }
+  .project-row:hover .icon-btn-mini { opacity: 1; }
+
+  .day-cell {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    border-right: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    transition: background 0.12s, opacity 0.15s, box-shadow 0.12s;
+    position: relative;
+    user-select: none;
+  }
+  .day-cell:hover { background: rgba(255,255,255,0.03); }
+  .day-other { cursor: default; }
+  .day-other:hover { background: transparent; }
+  .day-today { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.22); }
+  .day-highlighted { background: rgba(255,255,255,0.04); }
+  .day-in-range { background: rgba(255,255,255,0.08) !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2) !important; }
+
+  .input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    color: rgba(245,245,245,0.95);
+    padding: 6px 0;
+    font-family: -apple-system, "Inter", system-ui, sans-serif;
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+  }
+  .input:focus { border-bottom-color: rgba(255,255,255,0.5); }
+
+  .num-input {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(245,245,245,0.95);
+    padding: 7px 26px 7px 10px;
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+    border-radius: 0;
+    box-sizing: border-box;
+    letter-spacing: 0.02em;
+  }
+  .num-input:focus { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.04); }
+  .num-input::placeholder { color: rgba(245,245,245,0.25); }
+
+  .stepper-btn {
+    background: transparent;
+    border: none;
+    color: rgba(245,245,245,0.6);
+    cursor: pointer;
+    padding: 6px 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: color 0.1s, background 0.1s;
+  }
+  .stepper-btn:hover { color: rgba(245,245,245,1); background: rgba(255,255,255,0.04); }
+
+  .project-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.1s;
+  }
+
+  .confirm-btn {
+    background: transparent;
+    border: 1px solid rgba(252,165,165,0.4);
+    color: #FCA5A5;
+    padding: 2px 6px;
+    font-family: ui-monospace, monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+  }
+  .confirm-btn:hover { background: rgba(252,165,165,0.08); border-color: rgba(252,165,165,0.7); }
+
+  .popover-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 8px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .popover-item:hover { background: rgba(255,255,255,0.06); }
+  .popover-clear { color: rgba(245,245,245,0.55); }
+  .popover-clear:hover { color: rgba(245,245,245,0.95); }
+
+  .list-row {
+    display: flex; align-items: center; gap: 18px;
+    padding: 11px 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.1s;
+  }
+  .list-row:hover { background: rgba(255,255,255,0.02); }
+  .list-row-hint { opacity: 0; transition: opacity 0.15s; }
+  .list-row:hover .list-row-hint { opacity: 1; }
+`;
+const __root = ReactDOM.createRoot(document.getElementById('root'));
+__root.render(/*#__PURE__*/_jsxDEV(TimeTracker, {}, void 0, false));
+  </script>
+</body>
+</html>
