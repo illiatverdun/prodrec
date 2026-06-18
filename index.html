@@ -467,6 +467,15 @@ function getRangeKeys(keyA, keyB) {
   }
   return keys;
 }
+function filterHiddenWeekends(keys, weekendsByMonth) {
+  return keys.filter(key => {
+    const [y, m, d] = key.split('-').map(Number);
+    const monthKey = `${y}-${String(m).padStart(2, '0')}`;
+    if (weekendsByMonth[monthKey] !== true) return true;
+    const dow = new Date(y, m - 1, d).getDay();
+    return dow !== 0 && dow !== 6;
+  });
+}
 function formatEuro(num) {
   if (!num || isNaN(num)) return '0 €';
   return new Intl.NumberFormat('uk-UA', {
@@ -537,10 +546,13 @@ function TimeTracker() {
   useEffect(() => {
     if (!isDragging) return;
     function up() {
-      const keys = dragStart && dragEnd ? getRangeKeys(dragStart, dragEnd) : [];
+      let keys = dragStart && dragEnd ? getRangeKeys(dragStart, dragEnd) : [];
+      keys = filterHiddenWeekends(keys, weekendsByMonth);
       if (keys.length > 0) {
+        // anchor on last visible cell from drag; if dragEnd itself got filtered, use last remaining key
+        const anchor = keys.includes(dragEnd) ? dragEnd : keys[keys.length - 1];
         setPopover({
-          anchor: dragEnd,
+          anchor,
           keys
         });
       }
@@ -548,7 +560,7 @@ function TimeTracker() {
     }
     document.addEventListener('mouseup', up);
     return () => document.removeEventListener('mouseup', up);
-  }, [isDragging, dragStart, dragEnd]);
+  }, [isDragging, dragStart, dragEnd, weekendsByMonth]);
   useEffect(() => {
     if (!popover) return;
     function handler(e) {
