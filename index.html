@@ -413,6 +413,8 @@ const DEFAULT_PROJECTS = [{
   hoursPerDay: 8
 }];
 const COLOR_PALETTE = ['#5EEAD4', '#FCA5A5', '#FCD34D', '#A78BFA', '#86EFAC', '#93C5FD', '#F9A8D4', '#FDBA74'];
+const DEFAULT_TAX = 6;
+const DEFAULT_FEE = 27;
 const WEEKDAYS_SHORT = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'НД'];
 const WEEKDAY_FROM_DOW = ['НД', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 const MONTHS_UK = ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'];
@@ -476,6 +478,17 @@ function filterHiddenWeekends(keys, weekendsByMonth) {
     return dow !== 0 && dow !== 6;
   });
 }
+
+// Find the most recent explicit value at or before monthKey (rolling default).
+// Falls back to defaultValue when no earlier explicit entry exists.
+function effectiveValue(byMonth, monthKey, defaultValue) {
+  const sortedKeys = Object.keys(byMonth).sort();
+  let result = defaultValue;
+  for (const k of sortedKeys) {
+    if (k <= monthKey) result = byMonth[k];else break;
+  }
+  return result;
+}
 function formatEuro(num) {
   if (!num || isNaN(num)) return '0 €';
   return new Intl.NumberFormat('uk-UA', {
@@ -497,6 +510,10 @@ function TimeTracker() {
   const [projects, setProjects] = useState(DEFAULT_PROJECTS);
   const [days, setDays] = useState({});
   const [weekendsByMonth, setWeekendsByMonth] = useState({});
+  const [taxByMonth, setTaxByMonth] = useState({});
+  const [commissionByMonth, setCommissionByMonth] = useState({});
+  const [taxInput, setTaxInput] = useState('');
+  const [commissionInput, setCommissionInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [popover, setPopover] = useState(null);
   const [dragStart, setDragStart] = useState(null);
@@ -525,6 +542,12 @@ function TimeTracker() {
         if (data.weekendsByMonth && typeof data.weekendsByMonth === 'object') {
           setWeekendsByMonth(data.weekendsByMonth);
         }
+        if (data.taxByMonth && typeof data.taxByMonth === 'object') {
+          setTaxByMonth(data.taxByMonth);
+        }
+        if (data.commissionByMonth && typeof data.commissionByMonth === 'object') {
+          setCommissionByMonth(data.commissionByMonth);
+        }
       }
     } catch (e) {
       console.warn('Load failed:', e);
@@ -537,12 +560,14 @@ function TimeTracker() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         projects,
         days,
-        weekendsByMonth
+        weekendsByMonth,
+        taxByMonth,
+        commissionByMonth
       }));
     } catch (e) {
       console.error('Save failed:', e);
     }
-  }, [projects, days, weekendsByMonth, loading]);
+  }, [projects, days, weekendsByMonth, taxByMonth, commissionByMonth, loading]);
   useEffect(() => {
     if (!isDragging) return;
     function up() {
@@ -632,6 +657,58 @@ function TimeTracker() {
       ...patch
     } : p));
   }
+  function commitTax() {
+    const k = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+    const n = parseFloat(taxInput.replace(',', '.')) || 0;
+    const eff = effectiveValue(taxByMonth, k, DEFAULT_TAX);
+    if (n === eff) {
+      // No semantic change — just normalize the displayed format (e.g. "6." → "6")
+      setTaxInput(String(eff));
+      return;
+    }
+    setTaxByMonth(prev => {
+      if (n === 0) {
+        const {
+          [k]: _,
+          ...rest
+        } = prev;
+        return rest;
+      }
+      return {
+        ...prev,
+        [k]: n
+      };
+    });
+  }
+  function commitCommission() {
+    const k = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+    const n = parseFloat(commissionInput.replace(',', '.')) || 0;
+    const eff = effectiveValue(commissionByMonth, k, DEFAULT_FEE);
+    if (n === eff) {
+      setCommissionInput(String(eff));
+      return;
+    }
+    setCommissionByMonth(prev => {
+      if (n === 0) {
+        const {
+          [k]: _,
+          ...rest
+        } = prev;
+        return rest;
+      }
+      return {
+        ...prev,
+        [k]: n
+      };
+    });
+  }
+
+  // Sync input fields when navigating between months
+  useEffect(() => {
+    const k = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+    setTaxInput(String(effectiveValue(taxByMonth, k, DEFAULT_TAX)));
+    setCommissionInput(String(effectiveValue(commissionByMonth, k, DEFAULT_FEE)));
+  }, [currentMonth, taxByMonth, commissionByMonth]);
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
   const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
@@ -651,6 +728,11 @@ function TimeTracker() {
   });
   const totalDays = monthEntries.length;
   const grandTotal = projectStats.reduce((sum, p) => sum + p.total, 0);
+  const currentTax = effectiveValue(taxByMonth, monthKey, DEFAULT_TAX);
+  const currentCommission = effectiveValue(commissionByMonth, monthKey, DEFAULT_FEE);
+  const taxAmount = grandTotal * (currentTax / 100);
+  const monthlyDeductions = taxAmount + currentCommission;
+  const netProfit = grandTotal - taxAmount - currentCommission;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   let workdays = 0;
   for (let d = 1; d <= daysInMonth; d++) {
@@ -952,7 +1034,150 @@ function TimeTracker() {
       fontSize: '17px',
       color: 'rgba(245,245,245,0.98)'
     }
-  }, formatEuro(grandTotal))))), /*#__PURE__*/React.createElement("div", {
+  }, formatEuro(grandTotal))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      marginTop: '14px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "caption",
+    style: {
+      fontSize: '9px',
+      width: '36px'
+    }
+  }, "− tax"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'relative',
+      width: '54px'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "num-input mono",
+    type: "text",
+    inputMode: "decimal",
+    value: taxInput,
+    onChange: e => setTaxInput(e.target.value),
+    onBlur: commitTax,
+    onKeyDown: e => {
+      if (e.key === 'Enter') e.target.blur();
+    },
+    placeholder: "0",
+    style: {
+      fontSize: '11px',
+      padding: '4px 16px 4px 6px'
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "mono dim-2",
+    style: {
+      position: 'absolute',
+      right: '5px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      fontSize: '10px',
+      pointerEvents: 'none'
+    }
+  }, "%")), /*#__PURE__*/React.createElement("span", {
+    className: "mono dim-2",
+    style: {
+      flex: 1,
+      textAlign: 'right',
+      fontSize: '11px'
+    }
+  }, "−", formatEuro(taxAmount))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "caption",
+    style: {
+      fontSize: '9px',
+      width: '36px'
+    }
+  }, "− fee"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: 'relative',
+      width: '54px'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    className: "num-input mono",
+    type: "text",
+    inputMode: "decimal",
+    value: commissionInput,
+    onChange: e => setCommissionInput(e.target.value),
+    onBlur: commitCommission,
+    onKeyDown: e => {
+      if (e.key === 'Enter') e.target.blur();
+    },
+    placeholder: "0",
+    style: {
+      fontSize: '11px',
+      padding: '4px 16px 4px 6px'
+    }
+  }), /*#__PURE__*/React.createElement("span", {
+    className: "mono dim-2",
+    style: {
+      position: 'absolute',
+      right: '5px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      fontSize: '10px',
+      pointerEvents: 'none'
+    }
+  }, "€")), /*#__PURE__*/React.createElement("span", {
+    className: "mono dim-2",
+    style: {
+      flex: 1,
+      textAlign: 'right',
+      fontSize: '11px'
+    }
+  }, "−", formatEuro(currentCommission))), monthlyDeductions > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+      marginTop: '-2px'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "caption dim-3",
+    style: {
+      fontSize: '9px',
+      paddingLeft: '44px'
+    }
+  }, "total fees"), /*#__PURE__*/React.createElement("span", {
+    className: "mono dim-3",
+    style: {
+      fontSize: '10px'
+    }
+  }, formatEuro(monthlyDeductions))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'baseline',
+      paddingTop: '10px',
+      marginTop: '2px',
+      borderTop: '1px dashed rgba(255,255,255,0.1)'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "caption",
+    style: {
+      fontSize: '10px'
+    }
+  }, "NET PROFIT"), /*#__PURE__*/React.createElement("span", {
+    className: "mono",
+    style: {
+      fontSize: '15px',
+      color: '#5EEAD4'
+    }
+  }, formatEuro(netProfit)))))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: '32px'
     }
