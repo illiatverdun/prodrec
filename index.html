@@ -650,16 +650,16 @@ function TimeTracker() {
           }
         }
       } catch (e) {}
-      // Fetch fresh
+      // Fetch fresh — CDN-served API (jsdelivr), no CORS issues
       try {
-        const res = await fetch('https://open.er-api.com/v6/latest/EUR');
+        const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
         if (!res.ok) throw new Error('rates http ' + res.status);
         const data = await res.json();
-        if (data && data.rates) {
+        if (data && data.eur) {
           const fresh = {
             EUR: 1,
-            PLN: data.rates.PLN || FALLBACK_RATES.PLN,
-            UAH: data.rates.UAH || FALLBACK_RATES.UAH
+            PLN: data.eur.pln || FALLBACK_RATES.PLN,
+            UAH: data.eur.uah || FALLBACK_RATES.UAH
           };
           const now = Date.now();
           if (!cancelled) {
@@ -674,7 +674,7 @@ function TimeTracker() {
           } catch (e) {}
         }
       } catch (e) {
-        console.warn('Rates fetch failed, using fallback or stale cache:', e);
+        console.info('Live rates unavailable, using cache or fallback');
         try {
           const cachedRaw = localStorage.getItem(RATES_CACHE_KEY);
           if (cachedRaw) {
@@ -783,48 +783,67 @@ function TimeTracker() {
   }
   function commitTax() {
     const k = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
-    const n = parseFloat(taxInput.replace(',', '.')) || 0;
+    const trimmed = taxInput.replace(',', '.').trim();
     const eff = effectiveValue(taxByMonth, k, DEFAULT_TAX);
-    if (n === eff) {
-      // No semantic change — just normalize the displayed format (e.g. "6." → "6")
+    // Empty input → revert to inheritance (clear explicit entry)
+    if (trimmed === '') {
+      setTaxByMonth(prev => {
+        if (!(k in prev)) return prev;
+        const {
+          [k]: _,
+          ...rest
+        } = prev;
+        return rest;
+      });
+      return;
+    }
+    const n = parseFloat(trimmed);
+    if (isNaN(n)) {
+      // Invalid — restore display
       setTaxInput(String(eff));
       return;
     }
-    setTaxByMonth(prev => {
-      if (n === 0) {
-        const {
-          [k]: _,
-          ...rest
-        } = prev;
-        return rest;
-      }
-      return {
-        ...prev,
-        [k]: n
-      };
-    });
+    const value = Math.max(0, n);
+    if (value === eff) {
+      // Same as effective — normalize display, no state change
+      setTaxInput(String(eff));
+      return;
+    }
+    // Save explicit value (including 0)
+    setTaxByMonth(prev => ({
+      ...prev,
+      [k]: value
+    }));
   }
   function commitCommission() {
     const k = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
-    const n = parseFloat(commissionInput.replace(',', '.')) || 0;
+    const trimmed = commissionInput.replace(',', '.').trim();
     const eff = effectiveValue(commissionByMonth, k, DEFAULT_FEE);
-    if (n === eff) {
-      setCommissionInput(String(eff));
-      return;
-    }
-    setCommissionByMonth(prev => {
-      if (n === 0) {
+    if (trimmed === '') {
+      setCommissionByMonth(prev => {
+        if (!(k in prev)) return prev;
         const {
           [k]: _,
           ...rest
         } = prev;
         return rest;
-      }
-      return {
-        ...prev,
-        [k]: n
-      };
-    });
+      });
+      return;
+    }
+    const n = parseFloat(trimmed);
+    if (isNaN(n)) {
+      setCommissionInput(String(eff));
+      return;
+    }
+    const value = Math.max(0, n);
+    if (value === eff) {
+      setCommissionInput(String(eff));
+      return;
+    }
+    setCommissionByMonth(prev => ({
+      ...prev,
+      [k]: value
+    }));
   }
 
   // Sync input fields when navigating between months
