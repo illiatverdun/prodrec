@@ -415,6 +415,20 @@ const DEFAULT_PROJECTS = [{
 const COLOR_PALETTE = ['#5EEAD4', '#FCA5A5', '#FCD34D', '#A78BFA', '#86EFAC', '#93C5FD', '#F9A8D4', '#FDBA74'];
 const DEFAULT_TAX = 6;
 const DEFAULT_FEE = 27;
+const CURRENCY_SYMBOLS = {
+  EUR: '€',
+  PLN: 'zł',
+  UAH: '₴'
+};
+// Fallback rates used until live data loads (approximate, will be replaced on first fetch)
+const FALLBACK_RATES = {
+  EUR: 1,
+  PLN: 4.3,
+  UAH: 47.5
+};
+const RATES_CACHE_KEY = 'timetracker-rates-v1';
+const RATES_TTL_MS = 6 * 60 * 60 * 1000; // 6h
+
 const WEEKDAYS_SHORT = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'НД'];
 const WEEKDAY_FROM_DOW = ['НД', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 const MONTHS_UK = ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'];
@@ -489,12 +503,17 @@ function effectiveValue(byMonth, monthKey, defaultValue) {
   }
   return result;
 }
-function formatEuro(num) {
-  if (!num || isNaN(num)) return '0 €';
+function formatMoney(eur, currency, rates) {
+  const cur = currency || 'EUR';
+  const symbol = CURRENCY_SYMBOLS[cur] || '€';
+  if (!eur || isNaN(eur)) return '0 ' + symbol;
+  const rate = rates && rates[cur] || 1;
+  const value = eur * rate;
+  const fractionDigits = cur === 'UAH' ? 0 : 2;
   return new Intl.NumberFormat('uk-UA', {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  }).format(num) + ' €';
+    maximumFractionDigits: fractionDigits
+  }).format(value) + ' ' + symbol;
 }
 function daysWord(n) {
   if (n === 1) return 'день';
@@ -514,6 +533,9 @@ function TimeTracker() {
   const [commissionByMonth, setCommissionByMonth] = useState({});
   const [taxInput, setTaxInput] = useState('');
   const [commissionInput, setCommissionInput] = useState('');
+  const [currency, setCurrency] = useState('EUR');
+  const [rates, setRates] = useState(FALLBACK_RATES);
+  const [ratesUpdatedAt, setRatesUpdatedAt] = useState(null);
   const [loading, setLoading] = useState(true);
   const [popover, setPopover] = useState(null);
   const [dragStart, setDragStart] = useState(null);
@@ -525,49 +547,151 @@ function TimeTracker() {
   const [newProjectName, setNewProjectName] = useState('');
   const [confirmingDelete, setConfirmingDelete] = useState(null);
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const data = JSON.parse(raw);
-        if (Array.isArray(data.projects) && data.projects.length > 0) {
-          setProjects(data.projects.map(p => ({
-            rate: 0,
-            hoursPerDay: 8,
-            ...p
-          })));
+    let cancelled = false;
+    // Fallback — if storage hangs, show UI with defaults after 2s
+    const fallback = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 2000);
+    async function readStorage() {
+      try {
+        if (typeof window !== 'undefined' && window.storage) {
+          const r = await window.storage.get(STORAGE_KEY);
+          return r?.value || null;
         }
-        if (data.days && typeof data.days === 'object') {
-          setDays(data.days);
-        }
-        if (data.weekendsByMonth && typeof data.weekendsByMonth === 'object') {
-          setWeekendsByMonth(data.weekendsByMonth);
-        }
-        if (data.taxByMonth && typeof data.taxByMonth === 'object') {
-          setTaxByMonth(data.taxByMonth);
-        }
-        if (data.commissionByMonth && typeof data.commissionByMonth === 'object') {
-          setCommissionByMonth(data.commissionByMonth);
-        }
+      } catch (e) {}
+      try {
+        return localStorage.getItem(STORAGE_KEY);
+      } catch (e) {
+        return null;
       }
-    } catch (e) {
-      console.warn('Load failed:', e);
     }
-    setLoading(false);
+    async function load() {
+      try {
+        const raw = await readStorage();
+        if (!cancelled && raw) {
+          const data = JSON.parse(raw);
+          if (Array.isArray(data.projects) && data.projects.length > 0) {
+            setProjects(data.projects.map(p => ({
+              rate: 0,
+              hoursPerDay: 8,
+              ...p
+            })));
+          }
+          if (data.days && typeof data.days === 'object') {
+            setDays(data.days);
+          }
+          if (data.weekendsByMonth && typeof data.weekendsByMonth === 'object') {
+            setWeekendsByMonth(data.weekendsByMonth);
+          }
+          if (data.taxByMonth && typeof data.taxByMonth === 'object') {
+            setTaxByMonth(data.taxByMonth);
+          }
+          if (data.commissionByMonth && typeof data.commissionByMonth === 'object') {
+            setCommissionByMonth(data.commissionByMonth);
+          }
+          if (typeof data.currency === 'string' && CURRENCY_SYMBOLS[data.currency]) {
+            setCurrency(data.currency);
+          }
+        }
+      } catch (e) {
+        console.warn('Storage load failed:', e);
+      }
+      if (!cancelled) {
+        clearTimeout(fallback);
+        setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      cancelled = true;
+      clearTimeout(fallback);
+    };
   }, []);
   useEffect(() => {
     if (loading) return;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        projects,
-        days,
-        weekendsByMonth,
-        taxByMonth,
-        commissionByMonth
-      }));
-    } catch (e) {
-      console.error('Save failed:', e);
+    const json = JSON.stringify({
+      projects,
+      days,
+      weekendsByMonth,
+      taxByMonth,
+      commissionByMonth,
+      currency
+    });
+    (async () => {
+      try {
+        if (typeof window !== 'undefined' && window.storage) {
+          await window.storage.set(STORAGE_KEY, json);
+          return;
+        }
+      } catch (e) {}
+      try {
+        localStorage.setItem(STORAGE_KEY, json);
+      } catch (e) {
+        console.error('Save failed:', e);
+      }
+    })();
+  }, [projects, days, weekendsByMonth, taxByMonth, commissionByMonth, currency, loading]);
+
+  // Fetch live currency rates (cached for 6h in localStorage)
+  useEffect(() => {
+    let cancelled = false;
+    async function loadRates() {
+      // Try cache first
+      try {
+        const cachedRaw = localStorage.getItem(RATES_CACHE_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw);
+          if (cached.rates && cached.fetchedAt && Date.now() - cached.fetchedAt < RATES_TTL_MS) {
+            if (!cancelled) {
+              setRates(cached.rates);
+              setRatesUpdatedAt(cached.fetchedAt);
+            }
+            return;
+          }
+        }
+      } catch (e) {}
+      // Fetch fresh
+      try {
+        const res = await fetch('https://open.er-api.com/v6/latest/EUR');
+        if (!res.ok) throw new Error('rates http ' + res.status);
+        const data = await res.json();
+        if (data && data.rates) {
+          const fresh = {
+            EUR: 1,
+            PLN: data.rates.PLN || FALLBACK_RATES.PLN,
+            UAH: data.rates.UAH || FALLBACK_RATES.UAH
+          };
+          const now = Date.now();
+          if (!cancelled) {
+            setRates(fresh);
+            setRatesUpdatedAt(now);
+          }
+          try {
+            localStorage.setItem(RATES_CACHE_KEY, JSON.stringify({
+              rates: fresh,
+              fetchedAt: now
+            }));
+          } catch (e) {}
+        }
+      } catch (e) {
+        console.warn('Rates fetch failed, using fallback or stale cache:', e);
+        try {
+          const cachedRaw = localStorage.getItem(RATES_CACHE_KEY);
+          if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (cached.rates && !cancelled) {
+              setRates(cached.rates);
+              setRatesUpdatedAt(cached.fetchedAt || null);
+            }
+          }
+        } catch (err) {}
+      }
     }
-  }, [projects, days, weekendsByMonth, taxByMonth, commissionByMonth, loading]);
+    loadRates();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   useEffect(() => {
     if (!isDragging) return;
     function up() {
@@ -752,6 +876,9 @@ function TimeTracker() {
     const now = new Date();
     setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
   }
+
+  // Currency-aware formatter, used everywhere computed money is rendered
+  const format = eur => formatMoney(eur, currency, rates);
   if (loading) return /*#__PURE__*/React.createElement("div", {
     style: loadingStyle
   }, "LOADING…");
@@ -866,7 +993,7 @@ function TimeTracker() {
       marginLeft: 'auto',
       color: 'rgba(245,245,245,0.9)'
     }
-  }, formatEuro(grandTotal))), /*#__PURE__*/React.createElement("div", {
+  }, format(grandTotal))), /*#__PURE__*/React.createElement("div", {
     style: mainGridStyle
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -989,9 +1116,29 @@ function TimeTracker() {
   }), /*#__PURE__*/React.createElement("div", {
     className: "caption",
     style: {
+      marginBottom: '14px'
+    }
+  }, "BILLING"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      border: '1px solid rgba(255,255,255,0.1)',
+      marginBottom: '6px'
+    }
+  }, ['EUR', 'PLN', 'UAH'].map(c => /*#__PURE__*/React.createElement("button", {
+    key: c,
+    className: `btn-seg ${currency === c ? 'btn-seg-active' : ''}`,
+    onClick: () => setCurrency(c),
+    style: {
+      flex: 1
+    }
+  }, c))), /*#__PURE__*/React.createElement("div", {
+    className: "mono dim-3",
+    style: {
+      fontSize: '9px',
+      letterSpacing: '0.08em',
       marginBottom: '18px'
     }
-  }, "BILLING"), projects.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, currency === 'EUR' ? /*#__PURE__*/React.createElement("span", null, "base currency") : /*#__PURE__*/React.createElement("span", null, "1 € = ", rates[currency] ? rates[currency].toFixed(currency === 'UAH' ? 2 : 3) : '—', " ", CURRENCY_SYMBOLS[currency], ratesUpdatedAt && /*#__PURE__*/React.createElement(React.Fragment, null, " · ", new Date(ratesUpdatedAt).toLocaleDateString('uk-UA')))), projects.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "dim-3",
     style: {
       fontSize: '12px'
@@ -1009,7 +1156,8 @@ function TimeTracker() {
       project: p,
       count: stat?.count || 0,
       total: stat?.total || 0,
-      onUpdate: patch => updateProject(p.id, patch)
+      onUpdate: patch => updateProject(p.id, patch),
+      format: format
     });
   }), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1034,7 +1182,7 @@ function TimeTracker() {
       fontSize: '17px',
       color: 'rgba(245,245,245,0.98)'
     }
-  }, formatEuro(grandTotal))), /*#__PURE__*/React.createElement("div", {
+  }, format(grandTotal))), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: '14px',
       display: 'flex',
@@ -1090,7 +1238,7 @@ function TimeTracker() {
       textAlign: 'right',
       fontSize: '11px'
     }
-  }, "−", formatEuro(taxAmount))), /*#__PURE__*/React.createElement("div", {
+  }, "−", format(taxAmount))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -1139,7 +1287,7 @@ function TimeTracker() {
       textAlign: 'right',
       fontSize: '11px'
     }
-  }, "−", formatEuro(currentCommission))), monthlyDeductions > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "−", format(currentCommission))), monthlyDeductions > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'space-between',
@@ -1157,7 +1305,7 @@ function TimeTracker() {
     style: {
       fontSize: '10px'
     }
-  }, formatEuro(monthlyDeductions))), /*#__PURE__*/React.createElement("div", {
+  }, format(monthlyDeductions))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'space-between',
@@ -1177,7 +1325,7 @@ function TimeTracker() {
       fontSize: '15px',
       color: '#5EEAD4'
     }
-  }, formatEuro(netProfit)))))), /*#__PURE__*/React.createElement("div", {
+  }, format(netProfit)))))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: '32px'
     }
@@ -1193,7 +1341,8 @@ function BillingBlock({
   project,
   count,
   total,
-  onUpdate
+  onUpdate,
+  format
 }) {
   const [rateInput, setRateInput] = useState(String(project.rate || ''));
   useEffect(() => {
@@ -1347,7 +1496,7 @@ function BillingBlock({
       fontSize: '13px',
       color: project.color
     }
-  }, formatEuro(total)))));
+  }, format(total)))));
 }
 function CalendarView({
   grid,
