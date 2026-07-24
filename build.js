@@ -12,8 +12,8 @@ const reactDomSrc = fs.readFileSync('./node_modules/react-dom/umd/react-dom.prod
 let jsx = fs.readFileSync('./timetracker.jsx', 'utf-8');
 
 // Strip imports — React/ReactDOM come from inlined UMD
-jsx = jsx.replace(/^import React.*?from 'react';\n/gm, '');
-jsx = jsx.replace(/^import \{.*?\} from 'lucide-react';\n/gm, '');
+jsx = jsx.replace(/^import React.*?from 'react';\r?\n/gm, '');
+jsx = jsx.replace(/^import \{.*?\} from 'lucide-react';\r?\n/gm, '');
 jsx = jsx.replace('export default function TimeTracker()', 'function TimeTracker()');
 
 // Inline icon components (no lucide-react dependency needed in browser)
