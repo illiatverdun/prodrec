@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Timetracker</title>
+  <title>prodrec</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230c0c0d'/%3E%3Ctext y='78' x='10' font-size='80' fill='%235EEAD4' font-family='monospace'%3E%E2%88%91%3C/text%3E%3C/svg%3E">
   <style>
     html, body { margin: 0; padding: 0; background: #0c0c0d; }
@@ -28,7 +28,6 @@
 </head>
 <body>
   <div id="root"></div>
-
   <script>
     window.addEventListener('error', function(e) {
       const root = document.getElementById('root');
@@ -37,7 +36,6 @@
       }
     });
   </script>
-
   <script>/**
  * @license React
  * react.production.min.js
@@ -338,8 +336,9 @@ var d=null!=c&&c.hydratedSources||null,e=!1,f="",g=aj;null!==c&&void 0!==c&&(!0=
 function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmountComponentAtNode=function(a){if(!Vd(a))throw Error(m(40));return a._reactRootContainer?(yb(function(){Wd(null,null,a,!1,function(){a._reactRootContainer=null;a[Ja]=null})}),!0):!1};Q.unstable_batchedUpdates=Tf;Q.unstable_renderSubtreeIntoContainer=function(a,b,c,d){if(!Vd(c))throw Error(m(200));if(null==a||void 0===a._reactInternals)throw Error(m(38));return Wd(a,b,c,!1,d)};Q.version="18.3.1-next-f1338f8080-20240426"});
 })();
 </script>
-
   <script>
+"use strict";
+
 const {
   useState,
   useEffect,
@@ -900,7 +899,7 @@ function TimeTracker() {
   const format = eur => formatMoney(eur, currency, rates);
   if (loading) return /*#__PURE__*/React.createElement("div", {
     style: loadingStyle
-  }, "LOADING…");
+  }, "LOADING\u2026");
   return /*#__PURE__*/React.createElement("div", {
     style: containerStyle
   }, /*#__PURE__*/React.createElement("style", null, globalCSS), /*#__PURE__*/React.createElement("div", {
@@ -922,7 +921,7 @@ function TimeTracker() {
     style: {
       marginBottom: '12px'
     }
-  }, "─── TIMETRACKER ───"), /*#__PURE__*/React.createElement("div", {
+  }, "\u2500\u2500\u2500 TIMETRACKER \u2500\u2500\u2500"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'baseline',
@@ -946,7 +945,7 @@ function TimeTracker() {
   }, /*#__PURE__*/React.createElement("button", {
     className: "icon-btn",
     onClick: goPrev,
-    title: "Попередній місяць"
+    title: "\u041F\u043E\u043F\u0435\u0440\u0435\u0434\u043D\u0456\u0439 \u043C\u0456\u0441\u044F\u0446\u044C"
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
     size: 16
   })), /*#__PURE__*/React.createElement("button", {
@@ -955,7 +954,7 @@ function TimeTracker() {
   }, "Today"), /*#__PURE__*/React.createElement("button", {
     className: "icon-btn",
     onClick: goNext,
-    title: "Наступний місяць"
+    title: "\u041D\u0430\u0441\u0442\u0443\u043F\u043D\u0438\u0439 \u043C\u0456\u0441\u044F\u0446\u044C"
   }, /*#__PURE__*/React.createElement(ChevronRight, {
     size: 16
   })), /*#__PURE__*/React.createElement("div", {
@@ -985,10 +984,10 @@ function TimeTracker() {
       opacity: hideWeekends ? 0.55 : 1,
       marginLeft: '4px'
     }
-  }, "СБ·НД"))), /*#__PURE__*/React.createElement("div", {
+  }, "\u0421\u0411\xB7\u041D\u0414"))), /*#__PURE__*/React.createElement("div", {
     className: "mono",
     style: statsRowStyle
-  }, /*#__PURE__*/React.createElement("span", null, "∑\xA0\xA0", String(totalDays).padStart(2, '0'), "\xA0/\xA0", workdays, "\xA0днів"), projectStats.map(p => /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement("span", null, "\u2211\xA0\xA0", String(totalDays).padStart(2, '0'), "\xA0/\xA0", workdays, "\xA0\u0434\u043D\u0456\u0432"), projectStats.map(p => /*#__PURE__*/React.createElement("span", {
     key: p.id,
     style: {
       display: 'inline-flex',
@@ -1094,7 +1093,7 @@ function TimeTracker() {
     }, "DELETE?") : /*#__PURE__*/React.createElement("button", {
       className: "icon-btn icon-btn-mini",
       onClick: () => setConfirmingDelete(p.id),
-      title: "Видалити проєкт"
+      title: "\u0412\u0438\u0434\u0430\u043B\u0438\u0442\u0438 \u043F\u0440\u043E\u0454\u043A\u0442"
     }, /*#__PURE__*/React.createElement(X, {
       size: 12
     }))));
@@ -1114,21 +1113,21 @@ function TimeTracker() {
         setNewProjectName('');
       }
     },
-    placeholder: "Назва проєкту"
+    placeholder: "\u041D\u0430\u0437\u0432\u0430 \u043F\u0440\u043E\u0454\u043A\u0442\u0443"
   }), /*#__PURE__*/React.createElement("div", {
     className: "mono caption",
     style: {
       marginTop: '8px',
       fontSize: '9px'
     }
-  }, "ENTER додати · ESC скасувати")) : /*#__PURE__*/React.createElement("button", {
+  }, "ENTER \u0434\u043E\u0434\u0430\u0442\u0438 \xB7 ESC \u0441\u043A\u0430\u0441\u0443\u0432\u0430\u0442\u0438")) : /*#__PURE__*/React.createElement("button", {
     className: "btn",
     onClick: () => setShowAddProject(true),
     style: {
       marginTop: '14px',
       width: '100%'
     }
-  }, "+ новий проєкт"), /*#__PURE__*/React.createElement("div", {
+  }, "+ \u043D\u043E\u0432\u0438\u0439 \u043F\u0440\u043E\u0454\u043A\u0442"), /*#__PURE__*/React.createElement("div", {
     style: {
       height: '40px'
     }
@@ -1157,12 +1156,12 @@ function TimeTracker() {
       letterSpacing: '0.08em',
       marginBottom: '18px'
     }
-  }, currency === 'EUR' ? /*#__PURE__*/React.createElement("span", null, "base currency") : /*#__PURE__*/React.createElement("span", null, "1 € = ", rates[currency] ? rates[currency].toFixed(currency === 'UAH' ? 2 : 3) : '—', " ", CURRENCY_SYMBOLS[currency], ratesUpdatedAt && /*#__PURE__*/React.createElement(React.Fragment, null, " · ", new Date(ratesUpdatedAt).toLocaleDateString('uk-UA')))), projects.length === 0 ? /*#__PURE__*/React.createElement("div", {
+  }, currency === 'EUR' ? /*#__PURE__*/React.createElement("span", null, "base currency") : /*#__PURE__*/React.createElement("span", null, "1 \u20AC = ", rates[currency] ? rates[currency].toFixed(currency === 'UAH' ? 2 : 3) : '—', " ", CURRENCY_SYMBOLS[currency], ratesUpdatedAt && /*#__PURE__*/React.createElement(React.Fragment, null, " \xB7 ", new Date(ratesUpdatedAt).toLocaleDateString('uk-UA')))), projects.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "dim-3",
     style: {
       fontSize: '12px'
     }
-  }, "немає проєктів") : /*#__PURE__*/React.createElement("div", {
+  }, "\u043D\u0435\u043C\u0430\u0454 \u043F\u0440\u043E\u0454\u043A\u0442\u0456\u0432") : /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       flexDirection: 'column',
@@ -1220,7 +1219,7 @@ function TimeTracker() {
       fontSize: '9px',
       width: '36px'
     }
-  }, "− tax"), /*#__PURE__*/React.createElement("div", {
+  }, "\u2212 tax"), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       width: '54px'
@@ -1257,7 +1256,7 @@ function TimeTracker() {
       textAlign: 'right',
       fontSize: '11px'
     }
-  }, "−", format(taxAmount))), /*#__PURE__*/React.createElement("div", {
+  }, "\u2212", format(taxAmount))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -1269,7 +1268,7 @@ function TimeTracker() {
       fontSize: '9px',
       width: '36px'
     }
-  }, "− fee"), /*#__PURE__*/React.createElement("div", {
+  }, "\u2212 fee"), /*#__PURE__*/React.createElement("div", {
     style: {
       position: 'relative',
       width: '54px'
@@ -1299,14 +1298,14 @@ function TimeTracker() {
       fontSize: '10px',
       pointerEvents: 'none'
     }
-  }, "€")), /*#__PURE__*/React.createElement("span", {
+  }, "\u20AC")), /*#__PURE__*/React.createElement("span", {
     className: "mono dim-2",
     style: {
       flex: 1,
       textAlign: 'right',
       fontSize: '11px'
     }
-  }, "−", format(currentCommission))), monthlyDeductions > 0 && /*#__PURE__*/React.createElement("div", {
+  }, "\u2212", format(currentCommission))), monthlyDeductions > 0 && /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       justifyContent: 'space-between',
@@ -1354,7 +1353,7 @@ function TimeTracker() {
       lineHeight: 1.7,
       fontSize: '10px'
     }
-  }, "клік на день → вибрати проєкт", /*#__PURE__*/React.createElement("br", null), "затисни і протягни → виділити декілька днів", /*#__PURE__*/React.createElement("br", null), "данні зберігаються локально")))));
+  }, "\u043A\u043B\u0456\u043A \u043D\u0430 \u0434\u0435\u043D\u044C \u2192 \u0432\u0438\u0431\u0440\u0430\u0442\u0438 \u043F\u0440\u043E\u0454\u043A\u0442", /*#__PURE__*/React.createElement("br", null), "\u0437\u0430\u0442\u0438\u0441\u043D\u0438 \u0456 \u043F\u0440\u043E\u0442\u044F\u0433\u043D\u0438 \u2192 \u0432\u0438\u0434\u0456\u043B\u0438\u0442\u0438 \u0434\u0435\u043A\u0456\u043B\u044C\u043A\u0430 \u0434\u043D\u0456\u0432", /*#__PURE__*/React.createElement("br", null), "\u0434\u0430\u043D\u043D\u0456 \u0437\u0431\u0435\u0440\u0456\u0433\u0430\u044E\u0442\u044C\u0441\u044F \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u043E")))));
 }
 function BillingBlock({
   project,
@@ -1453,7 +1452,7 @@ function BillingBlock({
       fontSize: '12px',
       pointerEvents: 'none'
     }
-  }, "€"))), /*#__PURE__*/React.createElement("div", {
+  }, "\u20AC"))), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'flex',
       alignItems: 'center',
@@ -1474,7 +1473,7 @@ function BillingBlock({
   }, /*#__PURE__*/React.createElement("button", {
     className: "stepper-btn",
     onClick: () => setHours((project.hoursPerDay || 0) - 1),
-    "aria-label": "−"
+    "aria-label": "\u2212"
   }, /*#__PURE__*/React.createElement(ChevronLeft, {
     size: 12
   })), /*#__PURE__*/React.createElement("div", {
@@ -1509,7 +1508,7 @@ function BillingBlock({
       fontSize: '10px',
       letterSpacing: '0.08em'
     }
-  }, String(count).padStart(2, '0'), " × ", project.hoursPerDay || 0, " × ", project.rate || 0), /*#__PURE__*/React.createElement("span", {
+  }, String(count).padStart(2, '0'), " \xD7 ", project.hoursPerDay || 0, " \xD7 ", project.rate || 0), /*#__PURE__*/React.createElement("span", {
     className: "mono",
     style: {
       fontSize: '13px',
@@ -1643,14 +1642,14 @@ function ListView({
         padding: '40px 0',
         lineHeight: 1.5
       }
-    }, "Немає позначених днів у цьому місяці.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
+    }, "\u041D\u0435\u043C\u0430\u0454 \u043F\u043E\u0437\u043D\u0430\u0447\u0435\u043D\u0438\u0445 \u0434\u043D\u0456\u0432 \u0443 \u0446\u044C\u043E\u043C\u0443 \u043C\u0456\u0441\u044F\u0446\u0456.", /*#__PURE__*/React.createElement("br", null), /*#__PURE__*/React.createElement("span", {
       className: "mono",
       style: {
         fontSize: '11px',
         letterSpacing: '0.1em',
         color: 'rgba(245,245,245,0.25)'
       }
-    }, "перейди в CAL → затисни і протягни по днях"));
+    }, "\u043F\u0435\u0440\u0435\u0439\u0434\u0438 \u0432 CAL \u2192 \u0437\u0430\u0442\u0438\u0441\u043D\u0438 \u0456 \u043F\u0440\u043E\u0442\u044F\u0433\u043D\u0438 \u043F\u043E \u0434\u043D\u044F\u0445"));
   }
   return /*#__PURE__*/React.createElement("div", {
     style: {
@@ -1734,7 +1733,7 @@ function ListView({
           letterSpacing: '0.15em',
           textTransform: 'uppercase'
         }
-      }, "змінити"), isAnchor && /*#__PURE__*/React.createElement(Popover, {
+      }, "\u0437\u043C\u0456\u043D\u0438\u0442\u0438"), isAnchor && /*#__PURE__*/React.createElement(Popover, {
         popoverRef: popoverRef,
         projects: projects,
         currentProjectId: p.id,
@@ -1805,7 +1804,7 @@ function Popover({
     style: {
       fontSize: '9px'
     }
-  }, "●"))), /*#__PURE__*/React.createElement("div", {
+  }, "\u25CF"))), /*#__PURE__*/React.createElement("div", {
     style: {
       height: '1px',
       background: 'rgba(255,255,255,0.06)',
@@ -1821,7 +1820,7 @@ function Popover({
       letterSpacing: '0.12em',
       textTransform: 'uppercase'
     }
-  }, "× очистити")));
+  }, "\xD7 \u043E\u0447\u0438\u0441\u0442\u0438\u0442\u0438")));
 }
 const containerStyle = {
   background: '#0c0c0d',
