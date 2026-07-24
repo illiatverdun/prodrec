@@ -1,2 +1,2 @@
-# prodrec
+# lik.app
 Projects tracker for manage salary and working days. 
