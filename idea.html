@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>prodrec — ідея</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230c0c0d'/%3E%3Ctext y='78' x='10' font-size='80' fill='%235EEAD4' font-family='monospace'%3E%E2%88%91%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0c0c0d;
+    --surface: #141416;
+    --line: #232326;
+    --text: #ededef;
+    --muted: #8e8e96;
+    --accent: #5eead4;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 34rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 5rem;
+  }
+
+  /* — Заголовок — */
+
+  .mark {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 2rem;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 1.25rem;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+  }
+
+  .tagline {
+    font-size: 1.1875rem;
+    line-height: 1.45;
+    color: var(--muted);
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .tagline strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* — Секції — */
+
+  section {
+    margin-top: 3rem;
+  }
+
+  h2 {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 1rem;
+  }
+
+  p { margin: 0 0 1rem; }
+  p:last-child { margin-bottom: 0; }
+
+  .audience {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0.875rem;
+    padding: 1.25rem 1.375rem;
+  }
+
+  .audience p { color: var(--muted); }
+  .audience strong { color: var(--text); font-weight: 600; }
+
+  /* — Переваги — */
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    padding: 1.125rem 0;
+    border-top: 1px solid var(--line);
+  }
+
+  li:first-child { border-top: none; padding-top: 0; }
+  li:last-child { padding-bottom: 0; }
+
+  li b {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  li span {
+    color: var(--muted);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  /* — Підвал — */
+
+  footer {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+
+  footer a {
+    color: var(--accent);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  footer a:hover { text-decoration: underline; }
+
+  /* — Ширші екрани — */
+
+  @media (min-width: 40rem) {
+    body { font-size: 18px; }
+    .page { padding-top: 5rem; }
+    h1 { font-size: 2.75rem; }
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+
+    <div class="mark">∑</div>
+
+    <h1>prodrec</h1>
+
+    <p class="tagline">
+      Трекер робочих днів, який показує, <strong>скільки ти реально заробив</strong> —
+      після податків, комісій і конвертації валют.
+    </p>
+
+    <section>
+      <h2>Для кого</h2>
+      <div class="audience">
+        <p>
+          <strong>Фрілансер-одинак</strong> — одна людина, кілька клієнтів одночасно.
+          Не команда, не студія, не бухгалтер. Раз на тиждень відмітити дні,
+          у кінці місяця подивитись підсумок.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Головні переваги</h2>
+      <ul>
+        <li>
+          <b>Чистий прибуток, а не сума з контракту</b>
+          <span>Податок і комісія віднімаються автоматично. Видно, що саме
+          залишиться на руках.</span>
+        </li>
+        <li>
+          <b>Відмітити день — це один рух</b>
+          <span>Протягнув мишкою по календарю, обрав проєкт. Без таймерів
+          і форм на пів екрана.</span>
+        </li>
+        <li>
+          <b>Кілька проєктів зі своїми ставками</b>
+          <span>У кожного клієнта власна ставка за день і колір у календарі.</span>
+        </li>
+        <li>
+          <b>Будь-яка валюта за живим курсом</b>
+          <span>Контракт в одній валюті, життя в іншій — підсумок видно
+          в тій, що потрібна.</span>
+        </li>
+        <li>
+          <b>Свій відсоток на кожен місяць</b>
+          <span>Податок і комісія задаються окремо для кожного місяця —
+          умови змінюються, історія лишається правильною.</span>
+        </li>
+        <li>
+          <b>Без реєстрації</b>
+          <span>Дані зберігаються у твоєму браузері. Відкрив і працюєш.</span>
+        </li>
+      </ul>
+    </section>
+
+    <footer>
+      Живий сайт — <a href="https://illiatverdun.github.io/prodrec/">illiatverdun.github.io/prodrec</a>
+    </footer>
+
+  </main>
+</body>
+</html>
