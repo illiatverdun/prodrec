@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>prodrec — конкуренти</title>
+<style>
+  :root { --line: #e3e3e0; --muted: #78786f; --bg: #fbfbf9; --fg: #16160f; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 48px 24px 96px; background: var(--bg); color: var(--fg);
+         font: 15px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+       margin: 56px 0 12px; font-weight: 600; }
+  .sub { color: var(--muted); margin: 0 0 8px; }
+  .scroll { overflow-x: auto; border: 1px solid var(--line); background: #fff; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+  thead th { background: #f2f2ee; white-space: nowrap; }
+  tbody th { background: #f8f8f5; white-space: nowrap; width: 150px; }
+  #axes td { min-width: 200px; }
+  a { color: inherit; }
+  ol { padding-left: 20px; }
+  li { margin-bottom: 8px; }
+  li b { display: block; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+  figure { margin: 0; }
+  figure img { width: 100%; max-width: 100%; display: block; border: 1px solid var(--line);
+                background: #fff; aspect-ratio: 16/10; object-fit: cover; object-position: top; }
+  figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .locked { color: #b4501e; }
+</style>
+</head>
+<body>
+<main>
+
+  <h1>prodrec — конкуренти</h1>
+  <p class="sub">Зібрано 7 серпня 2026. П'ять продуктів, які відкривав особисто. Скріни — свої, 1440×900.</p>
+
+  <h2>Групи</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Група</th><th>Компанія</th><th>Чому тут</th><th>Що вивчити</th></tr></thead>
+    <tbody>
+      <tr><th rowspan="3">ХАРД</th>
+        <td><a href="https://freelancepaycalculator.com/">Freelance Pay Calculator</a></td>
+        <td>Безкоштовний калькулятор денної ставки з податком. Найближча форма.</td>
+        <td>Як пояснюють формулу. І де межа: разовий калькулятор без памʼяті.</td></tr>
+      <tr><td><a href="https://hnry.com.au/">Hnry</a></td>
+        <td>Обіцянка один в один: чисте на руки. Аудиторія — соло.</td>
+        <td>Одна обіцянка замість списку фіч. Сценарій «прийшло → податок → чисте».</td></tr>
+      <tr><td><a href="https://www.hellobonsai.com/taxes">Bonsai</a></td>
+        <td>Комбайн для фрилансера з блоком податків.</td>
+        <td>Чого не робити: важкий, скарги на підтримку. Цінова сходинка.</td></tr>
+
+      <tr><th rowspan="3">СОФТ</th>
+        <td><a href="https://toggl.com/track/">Toggl Track</a></td>
+        <td>Трекінг проєктів без грошей на виході.</td>
+        <td>Звіти й фільтри. Порожні стани.</td></tr>
+      <tr><td><a href="https://www.getharvest.com/">Harvest</a></td>
+        <td>Трекінг, доведений до суми і рахунку.</td>
+        <td>Перехід «час → сума». Картка проєкту з бюджетом.</td></tr>
+      <tr><td>Google Sheets / Notion</td>
+        <td>Головний реальний конкурент: більшість соло веде дні в таблиці.</td>
+        <td>Які колонки заводять руками. Що таблиця не вміє.</td></tr>
+
+      <tr><th rowspan="3">АСПІРАЦІЙНІ</th>
+        <td><a href="https://linear.app/">Linear</a></td>
+        <td>Планка ремесла в категорії трекінгу.</td>
+        <td>Тиша інтерфейсу: типографіка й відступи замість кольору.</td></tr>
+      <tr><td><a href="https://copilot.money/">Copilot Money</a></td>
+        <td>Еталон подачі грошей людині.</td>
+        <td>Головне число, валюта, мʼякі кольори.</td></tr>
+      <tr><td><a href="https://www.strava.com/">Strava</a></td>
+        <td>Робить із логу те, куди хочеться повертатись.</td>
+        <td>Агрегація й ритм: тижневі підсумки, серії.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Порівняння по осях</h2>
+  <div class="scroll">
+  <table id="axes">
+    <thead><tr>
+      <th></th>
+      <th><a href="https://freelancepaycalculator.com/">Freelance Pay Calculator</a></th>
+      <th><a href="https://hnry.com.au/">Hnry</a></th>
+      <th><a href="https://www.hellobonsai.com/">Bonsai</a></th>
+      <th><a href="https://toggl.com/track/">Toggl Track</a></th>
+      <th><a href="https://www.getharvest.com/">Harvest</a></th>
+    </tr></thead>
+    <tbody>
+      <tr><th>Аудиторія</th>
+        <td>Соло, який рахує ставку. 7 юрисдикцій на вибір</td>
+        <td>Sole trader AU / NZ / UK. Жорстко одна юрисдикція</td>
+        <td>Фрилансери й малі агенції, US-центрично</td>
+        <td>Команди. Соло — на безкоштовному</td>
+        <td>Команди, але Free-тариф «for individual freelancers»</td></tr>
+      <tr><th>Основа продукту</th>
+        <td>Односторінковий калькулятор, без реєстрації</td>
+        <td>Сервіс, не софт: бухгалтерія + власний рахунок</td>
+        <td>Комбайн: CRM, проєкти, час, рахунки + Bonsai Tax</td>
+        <td>Таймер + звіти</td>
+        <td>Трекер часу, зшитий з рахунками</td></tr>
+      <tr><th>Ключовий механізм</th>
+        <td>Від бажаного чистого доходу назад до ставки: мінус вихідні, свята, відпустка, % білабельності → 226 днів → денна ставка</td>
+        <td>Гроші клієнта → на Hnry-рахунок → податок утримано автоматично → на карту падає чисте</td>
+        <td>Витрати з банку → категоризація → списання → оцінка квартального податку</td>
+        <td>Старт/стоп → запис → звіт по проєкту</td>
+        <td>Години → рахунок клієнту → оплата</td></tr>
+      <tr><th>Довіра</th>
+        <td>Прозора формула + ринкові бенчмарки ставок за професією</td>
+        <td>Trustpilot 682 відгуки на першому екрані, живі бухгалтери</td>
+        <td>1030+ відгуків, куплений Zoom. Мінус: скарги на підтримку</td>
+        <td>Масштаб, 100+ інтеграцій, безкоштовний тариф назавжди</td>
+        <td>Логотипи VW, FedEx, Yale, «70 000 компаній»</td></tr>
+      <tr><th>Монетизація</th>
+        <td>Безкоштовно. Партнерські посилання + PDF-звіт</td>
+        <td>1% + GST з платежу, стеля $1 500/рік. Без підписки</td>
+        <td>$9 / $19 / $29 / $49 за юзера на місяць</td>
+        <td>Free / $9 / $14 за ліцензію на місяць</td>
+        <td>Free (1 місце, 2 проєкти) / $9 / $14 за місце</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Три спільні патерни</h2>
+  <ol>
+    <li><b>Усі рахують назад від грошей, а не від часу.</b> Цінність не в записі, а в підсумковій сумі: ставка, рахунок, податок.</li>
+    <li><b>Вхід безкоштовний, гроші — за продовження.</b> Платять не за розрахунок, а за те, щоб він зберігся і повторився сам.</li>
+    <li><b>Довіра купується на першому екрані.</b> Відгуки й логотипи клієнтів стоять вище за опис фіч у всіх п'ятьох.</li>
+  </ol>
+
+  <h2>Три відмінності</h2>
+  <ol>
+    <li><b>Одиниця обліку.</b> Година (Toggl, Harvest) проти доходу і ставки (Calculator, Hnry). День не є основою в жодного — вільне місце.</li>
+    <li><b>Прив'язка до юрисдикції.</b> Hnry і Bonsai вросли в одну податкову систему й не можуть на «Світ». Калькулятор мультикраїнний — і тому нічого не автоматизує.</li>
+    <li><b>Соло проти команди.</b> Toggl і Harvest продають місця; соло там ніколи не головний герой.</li>
+  </ol>
+
+  <h2>Три відкриті питання</h2>
+  <ol>
+    <li><b>Ринок.</b> Якщо «Світ» — податок вводить користувач сам, обіцянка слабша за «ми порахуємо за тебе». Чи йдемо на цей розмін?</li>
+    <li><b>Навіщо повертатись.</b> Калькулятор відкривають раз. Що змусить відкрити prodrec на 30-й день?</li>
+    <li><b>Гроші.</b> Підписка чи безкоштовно з партнерками? Відсоток недоступний без власного рахунку і юрисдикції.</li>
+  </ol>
+
+  <h2>Скріни</h2>
+  <div class="grid">
+    <figure><a href="screens/01b-freelancepaycalculator-result.png"><img src="screens/01b-freelancepaycalculator-result.png" alt=""></a>
+      <figcaption>Freelance Pay Calculator — ключовий екран: годинна $118.70, денна ставка $949.60</figcaption></figure>
+    <figure><a href="screens/01-freelancepaycalculator-home.png"><img src="screens/01-freelancepaycalculator-home.png" alt=""></a>
+      <figcaption>Freelance Pay Calculator — уся сторінка цілком</figcaption></figure>
+    <figure><a href="screens/02-hnry-home.png"><img src="screens/02-hnry-home.png" alt=""></a>
+      <figcaption>Hnry — головна, «Pay less tax»</figcaption></figure>
+    <figure><a href="screens/03-hnry-login.png"><img src="screens/03-hnry-login.png" alt=""></a>
+      <figcaption>Hnry, продукт — <span class="locked">доступ обмежений</span> (логін)</figcaption></figure>
+    <figure><a href="screens/04-bonsai-taxes.png"><img src="screens/04-bonsai-taxes.png" alt=""></a>
+      <figcaption>Bonsai Tax — сторінка продукту</figcaption></figure>
+    <figure><a href="screens/05-bonsai-app-login.png"><img src="screens/05-bonsai-app-login.png" alt=""></a>
+      <figcaption>Bonsai, продукт — <span class="locked">доступ обмежений</span> (логін + Cloudflare)</figcaption></figure>
+    <figure><a href="screens/06-toggl-home.png"><img src="screens/06-toggl-home.png" alt=""></a>
+      <figcaption>Toggl Track — головна</figcaption></figure>
+    <figure><a href="screens/07-toggl-app-login.png"><img src="screens/07-toggl-app-login.png" alt=""></a>
+      <figcaption>Toggl Track, продукт — <span class="locked">доступ обмежений</span> (логін)</figcaption></figure>
+    <figure><a href="screens/08-harvest-home.png"><img src="screens/08-harvest-home.png" alt=""></a>
+      <figcaption>Harvest — головна</figcaption></figure>
+    <figure><a href="screens/09-harvest-login.png"><img src="screens/09-harvest-login.png" alt=""></a>
+      <figcaption>Harvest, продукт — <span class="locked">доступ обмежений</span> (логін)</figcaption></figure>
+  </div>
+
+</main>
+</body>
+</html>
