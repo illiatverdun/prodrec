@@ -84,42 +84,160 @@
   p { margin: 0 0 1rem; }
   p:last-child { margin-bottom: 0; }
 
-  .audience {
+  .lede { color: var(--muted); }
+  .lede strong { color: var(--text); font-weight: 600; }
+
+  .card {
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 0.875rem;
     padding: 1.25rem 1.375rem;
   }
 
-  .audience p { color: var(--muted); }
-  .audience strong { color: var(--text); font-weight: 600; }
+  .card p { color: var(--muted); }
+  .card strong { color: var(--text); font-weight: 600; }
+
+  /* — Кроки — */
+
+  ol.steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: step;
+  }
+
+  ol.steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 0 0 1.125rem 2.25rem;
+    border: none;
+    color: var(--muted);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  ol.steps li:last-child { padding-bottom: 0; }
+
+  ol.steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0.0625rem;
+    width: 1.375rem;
+    height: 1.375rem;
+    border-radius: 50%;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--accent);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.6875rem;
+    line-height: 1.25rem;
+    text-align: center;
+  }
+
+  ol.steps li b { color: var(--text); font-weight: 600; }
+
+  /* — Формула — */
+
+  .formula {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 0.875rem;
+    padding: 1.125rem 1.375rem;
+    margin: 1.25rem 0 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.9;
+    color: var(--muted);
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .formula .net { color: var(--accent); }
 
   /* — Переваги — */
 
-  ul {
+  ul.list {
     list-style: none;
     margin: 0;
     padding: 0;
   }
 
-  li {
+  ul.list li {
     padding: 1.125rem 0;
     border-top: 1px solid var(--line);
   }
 
-  li:first-child { border-top: none; padding-top: 0; }
-  li:last-child { padding-bottom: 0; }
+  ul.list li:first-child { border-top: none; padding-top: 0; }
+  ul.list li:last-child { padding-bottom: 0; }
 
-  li b {
+  ul.list li b {
     display: block;
     font-weight: 600;
     margin-bottom: 0.25rem;
   }
 
-  li span {
+  ul.list li span {
     color: var(--muted);
     font-size: 0.9375rem;
     line-height: 1.5;
+  }
+
+  /* — Таблиці — */
+
+  .scroller {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    width: 100%;
+    min-width: 22rem;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.75rem 0.875rem 0.75rem 0;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    line-height: 1.45;
+  }
+
+  th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 0;
+  }
+
+  td:first-child { color: var(--muted); width: 50%; }
+  td:last-child, th:last-child { padding-right: 0; }
+  tr:last-child td { border-bottom: none; padding-bottom: 0; }
+
+  th.mine { color: var(--accent); }
+
+  /* — Статус — */
+
+  .note {
+    font-size: 0.875rem;
+    color: var(--muted);
+    margin-top: 0.875rem;
+  }
+
+  .badge {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.1875rem 0.5625rem;
+    margin-right: 0.5rem;
   }
 
   /* — Підвал — */
@@ -157,24 +275,73 @@
     <h1>prodrec</h1>
 
     <p class="tagline">
-      Трекер робочих днів, який показує, <strong>скільки ти реально заробив</strong> —
-      після податків, комісій і конвертації валют.
+      Трекер робочих днів для фрілансерів і контракторів, який показує
+      <strong>чистий прибуток</strong> — після податків, комісій і конвертації валют.
     </p>
 
     <section>
+      <h2>Проблема</h2>
+      <p class="lede">
+        Фрілансер бачить суму в контракті («€400/день»), але не бачить, що
+        залишиться на руках. Між ставкою та реальними грошима стоять податок,
+        комісія банку чи посередника, курс валют і кілька проєктів із різними
+        ставками.
+      </p>
+      <p class="lede">
+        У кінці кожного місяця треба порахувати дні по кожному клієнту, помножити
+        на ставку, відняти податок і комісію — і виставити інвойс. Зараз це роблять
+        у Google Calendar плюс Excel: <strong>20–40 хвилин ручної роботи щомісяця</strong>,
+        забуті дні, помилки в формулах, плутанина з валютами.
+      </p>
+    </section>
+
+    <section>
+      <h2>Рішення</h2>
+      <p class="lede">
+        prodrec замінює календар і табличку одним інструментом. Відмічаєш робочі
+        дні, обираєш проєкт — застосунок сам рахує брутто, віднімає податок
+        і комісію та показує чистий прибуток у потрібній валюті.
+      </p>
+      <p class="lede">
+        Без реєстрації, без таймерів, без складних дашбордів.
+        <strong>Відкрив — відмітив — закрив.</strong>
+      </p>
+    </section>
+
+    <section>
+      <h2>Як це працює</h2>
+      <ol class="steps">
+        <li><b>Створюєш проєкти.</b> У кожного клієнта своя назва й колір у календарі.</li>
+        <li><b>Задаєш ставку.</b> € за годину і кількість годин у робочому дні.</li>
+        <li><b>Відмічаєш дні.</b> Протягуєш мишкою по календарю й обираєш проєкт.</li>
+        <li><b>Вписуєш податок і комісію</b> — окремо для цього місяця.</li>
+        <li><b>Обираєш валюту</b> — EUR, PLN або UAH за живим курсом.</li>
+      </ol>
+      <div class="formula">брутто   = дні × години × ставка
+       − податок (% від брутто)
+       − комісія (сума за місяць)
+<span class="net">       = чистий прибуток</span></div>
+    </section>
+
+    <section>
       <h2>Для кого</h2>
-      <div class="audience">
+      <div class="card">
         <p>
-          <strong>Фрілансер-одинак</strong> — одна людина, кілька клієнтів одночасно.
-          Не команда, не студія, не бухгалтер. Раз на тиждень відмітити дні,
-          у кінці місяця подивитись підсумок.
+          <strong>Фрілансер-одинак на day-rate</strong> — розробник, дизайнер,
+          маркетолог, який працює як B2B (ФОП в Україні, JDG у Польщі, freelance
+          у Німеччині чи Швейцарії) з 1–3 клієнтами одночасно. Не команда,
+          не студія, не бухгалтер.
+        </p>
+        <p style="margin-top:0.875rem">
+          Поруч — digital nomads, part-time консультанти, фотографи й відеографи
+          (рахують у «знімальних днях»), репетитори.
         </p>
       </div>
     </section>
 
     <section>
       <h2>Головні переваги</h2>
-      <ul>
+      <ul class="list">
         <li>
           <b>Чистий прибуток, а не сума з контракту</b>
           <span>Податок і комісія віднімаються автоматично. Видно, що саме
@@ -187,23 +354,85 @@
         </li>
         <li>
           <b>Кілька проєктів зі своїми ставками</b>
-          <span>У кожного клієнта власна ставка за день і колір у календарі.</span>
+          <span>У кожного клієнта власна ставка й колір у календарі.</span>
         </li>
         <li>
-          <b>Будь-яка валюта за живим курсом</b>
-          <span>Контракт в одній валюті, життя в іншій — підсумок видно
-          в тій, що потрібна.</span>
+          <b>Три валюти за живим курсом</b>
+          <span>EUR, PLN, UAH. Курс оновлюється і кешується, офлайн є запасні
+          значення.</span>
         </li>
         <li>
           <b>Свій відсоток на кожен місяць</b>
-          <span>Податок і комісія задаються окремо для кожного місяця —
-          умови змінюються, історія лишається правильною.</span>
+          <span>Податок і комісія задаються окремо для кожного місяця й
+          успадковуються від попереднього — умови змінюються, історія лишається
+          правильною.</span>
+        </li>
+        <li>
+          <b>Календар і список</b>
+          <span>Два способи переглядати відмічені дні: місяць цілком або
+          рядком за рядком.</span>
         </li>
         <li>
           <b>Без реєстрації</b>
           <span>Дані зберігаються у твоєму браузері. Відкрив і працюєш.</span>
         </li>
       </ul>
+    </section>
+
+    <section>
+      <h2>Чому не Toggl чи Harvest</h2>
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr><th>Вони</th><th class="mine">prodrec</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Трекають години, start/stop</td><td>Трекає дні, клік або drag</td></tr>
+            <tr><td>Потрібна реєстрація</td><td>Працює одразу</td></tr>
+            <tr><td>$10–25 на місяць</td><td>Безкоштовно</td></tr>
+            <tr><td>Не рахують чистий прибуток</td><td>Податок + комісія = на руки</td></tr>
+            <tr><td>Універсальні, для всіх</td><td>Для day-rate контракторів</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">
+        Справжній конкурент — не SaaS, а Excel і Google Calendar.
+        Позиціонування: «викинь свою табличку».
+      </p>
+    </section>
+
+    <section>
+      <h2>Бізнес-модель — гіпотеза</h2>
+      <div class="scroller">
+        <table>
+          <thead>
+            <tr><th>Free, назавжди</th><th class="mine">Pro, ~$3/міс</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Повний трекінг днів</td><td>Генерація PDF-інвойсу</td></tr>
+            <tr><td>Податок, комісія, чистий прибуток</td><td>Хмарна синхронізація</td></tr>
+            <tr><td>Три валюти з живим курсом</td><td>Річний огляд доходів</td></tr>
+            <tr><td>Необмежені проєкти</td><td>Кастомні шаблони інвойсів</td></tr>
+            <tr><td>Без реєстрації, дані в браузері</td><td></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">
+        Нічого з платного ще не збудовано — це напрямок, а не план релізу.
+      </p>
+    </section>
+
+    <section>
+      <h2>Статус</h2>
+      <p class="lede">
+        <span class="badge">v1 · live</span>
+        Працює, безкоштовний, усі основні фічі на місці.
+      </p>
+      <p class="note">
+        Найближчий фокус — довести дизайн до ладу: типографіка, стани елементів,
+        мобільна версія. Далі — експорт інвойсу, акаунти й синхронізація між
+        пристроями, річна статистика.
+      </p>
     </section>
 
     <footer>
