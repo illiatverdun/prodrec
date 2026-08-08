@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>prodrec — дослідження ринку</title>
+<style>
+  :root {
+    --bg:        #0e0f12;
+    --surface:   #15171b;
+    --surface-2: #1b1e23;
+    --line:      #24282f;
+    --line-soft: #1c2026;
+    --fg:        #e9eaee;
+    --fg-2:      #b9bdc6;
+    --muted:     #8b909b;
+    --accent:    #8ab5a8;
+    --warn:      #c8845c;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --serif: Georgia, "Times New Roman", serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 15.5px/1.65 var(--sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ---------- каркас ---------- */
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 28px 128px;
+    display: grid;
+    grid-template-columns: 186px minmax(0, 1fr);
+    gap: 0 60px;
+  }
+
+  header.masthead { grid-column: 1 / -1; padding: 72px 0 0; }
+
+  .rail { position: sticky; top: 0; align-self: start; padding-top: 76px; }
+
+  main { min-width: 0; padding-top: 76px; }
+
+  /* ---------- шапка ---------- */
+
+  h1 {
+    font-size: clamp(30px, 4.4vw, 46px);
+    line-height: 1.08;
+    letter-spacing: -0.032em;
+    font-weight: 600;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+  h1 .dim { color: var(--muted); font-weight: 400; }
+
+  .lede {
+    max-width: 62ch;
+    color: var(--fg-2);
+    font-size: 17px;
+    line-height: 1.6;
+    margin: 0 0 28px;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 28px;
+    padding: 18px 0 0;
+    border-top: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .meta b { color: var(--fg-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ---------- навігація ---------- */
+
+  .rail nav { display: flex; flex-direction: column; gap: 2px; }
+
+  .rail a {
+    position: relative;
+    display: block;
+    padding: 7px 0 7px 16px;
+    font-size: 13.5px;
+    color: var(--muted);
+    text-decoration: none;
+    border-left: 1px solid var(--line);
+    transition: color .18s cubic-bezier(.16,1,.3,1);
+  }
+  .rail a::before {
+    content: "";
+    position: absolute;
+    left: -1px; top: 0;
+    width: 1px; height: 100%;
+    background: var(--accent);
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform .32s cubic-bezier(.16,1,.3,1);
+  }
+  .rail a:hover { color: var(--fg-2); }
+  .rail a.active { color: var(--fg); }
+  .rail a.active::before { transform: scaleY(1); }
+
+  .rail .rail-note {
+    margin-top: 26px;
+    padding-left: 17px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #6d727c;
+  }
+
+  /* ---------- секції ---------- */
+
+  section { padding-top: 88px; scroll-margin-top: 24px; }
+  section:first-of-type { padding-top: 0; }
+
+  section > h2 {
+    font-size: clamp(22px, 2.6vw, 29px);
+    line-height: 1.15;
+    letter-spacing: -0.022em;
+    font-weight: 600;
+    margin: 0 0 10px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+  }
+
+  .sec-lede {
+    max-width: 66ch;
+    color: var(--muted);
+    margin: 0 0 34px;
+  }
+
+  h3 {
+    font-size: 15.5px;
+    font-weight: 600;
+    letter-spacing: -0.006em;
+    margin: 44px 0 12px;
+  }
+  h3 .tag {
+    display: inline-block;
+    margin-right: 10px;
+    font-size: 11px;
+    letter-spacing: .1em;
+    color: var(--muted);
+    vertical-align: 1.5px;
+  }
+
+  p { max-width: 68ch; }
+  p.narrow { max-width: 62ch; }
+
+  a { color: inherit; text-decoration-color: var(--line); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--accent); }
+  a:focus-visible, .rail a:focus-visible, figure a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  strong, b { font-weight: 600; color: var(--fg); }
+
+  /* ---------- таблиці ---------- */
+
+  .scroll {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background:
+      linear-gradient(to left, var(--surface), rgba(21,23,27,0)) right / 40px 100% no-repeat local,
+      radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.5), rgba(0,0,0,0)) right / 16px 100% no-repeat scroll,
+      var(--surface);
+  }
+
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; line-height: 1.55; }
+
+  th, td {
+    text-align: left;
+    vertical-align: top;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+
+  thead th {
+    background: var(--surface-2);
+    color: var(--fg);
+    font-weight: 600;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--line);
+  }
+
+  tbody th {
+    background: var(--surface);
+    color: var(--fg);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  td { color: var(--fg-2); }
+  td b, td strong { color: var(--fg); }
+
+  /* липка перша колонка у широких таблицях */
+  .stick tbody th, .stick thead th:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 148px;
+    border-right: 1px solid var(--line);
+  }
+  .stick thead th:first-child { z-index: 2; }
+  .stick td { min-width: 216px; }
+
+  .wide td { min-width: 200px; }
+  .wide td:first-child { min-width: 0; }
+
+  .note {
+    margin: 12px 0 0;
+    max-width: 74ch;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .note b { color: var(--fg-2); }
+
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ---------- нумеровані висновки ---------- */
+
+  ol.findings { list-style: none; counter-reset: f; margin: 0; padding: 0; }
+  ol.findings > li {
+    counter-increment: f;
+    position: relative;
+    padding: 0 0 0 42px;
+    margin-bottom: 26px;
+    max-width: 70ch;
+    color: var(--fg-2);
+  }
+  ol.findings > li::before {
+    content: counter(f);
+    position: absolute;
+    left: 0; top: 0;
+    width: 24px;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 2px;
+  }
+  ol.findings > li b { display: block; color: var(--fg); margin-bottom: 3px; }
+
+  ul.plain { padding-left: 18px; max-width: 68ch; color: var(--fg-2); }
+  ul.plain li { margin-bottom: 9px; }
+
+  /* ---------- головна теза і біль ---------- */
+
+  .keystone {
+    margin: 0 0 34px;
+    padding: 26px 28px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .keystone .kicker {
+    font-size: 11.5px;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  .keystone p {
+    margin: 0;
+    font-size: 19px;
+    line-height: 1.5;
+    letter-spacing: -0.012em;
+    color: var(--fg);
+    max-width: 60ch;
+  }
+
+  blockquote.pain {
+    margin: 30px 0 26px;
+    padding: 0 0 0 26px;
+    border-left: 1px solid var(--warn);
+  }
+  blockquote.pain p {
+    margin: 0;
+    font-family: var(--serif);
+    font-size: clamp(22px, 3.2vw, 31px);
+    line-height: 1.32;
+    letter-spacing: -0.012em;
+    color: var(--fg);
+    max-width: 22ch;
+    text-wrap: balance;
+  }
+  blockquote.pain footer {
+    margin-top: 16px;
+    max-width: 46ch;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--muted);
+    font-family: var(--sans);
+  }
+
+  .layers { display: grid; gap: 14px; max-width: 68ch; margin: 26px 0 0; }
+  .layer { display: grid; grid-template-columns: 96px minmax(0,1fr); gap: 18px; align-items: baseline; }
+  .layer dt { font-size: 12.5px; color: var(--muted); }
+  .layer dd { margin: 0; color: var(--fg-2); }
+  .layer dd b { color: var(--fg); }
+
+  /* ---------- скріни ---------- */
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+    gap: 26px 22px;
+  }
+  figure { margin: 0; }
+  figure a { display: block; text-decoration: none; }
+  figure img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: top center;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    filter: saturate(.88) brightness(.9);
+    transition: filter .32s cubic-bezier(.16,1,.3,1),
+                border-color .32s cubic-bezier(.16,1,.3,1),
+                box-shadow .32s cubic-bezier(.16,1,.3,1);
+  }
+  figure a:hover img, figure a:focus-visible img {
+    filter: none;
+    border-color: #3a4048;
+    box-shadow: 0 10px 26px -12px rgba(0,0,0,.85);
+  }
+  figcaption { margin-top: 10px; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+  figcaption b { color: var(--fg-2); font-weight: 600; }
+  .locked { color: var(--warn); }
+
+  /* ---------- підвал ---------- */
+
+  footer.colophon {
+    grid-column: 1 / -1;
+    margin-top: 96px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  footer.colophon p { max-width: 70ch; margin: 0 0 6px; }
+
+  /* ---------- адаптив ---------- */
+
+  @media (max-width: 940px) {
+    .page { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0 20px 96px; }
+    header.masthead { padding-top: 48px; }
+    .rail {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      padding: 0;
+      margin: 26px -20px 0;
+      background: rgba(14,15,18,.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+    }
+    .rail nav {
+      flex-direction: row;
+      gap: 0;
+      overflow-x: auto;
+      padding: 0 20px;
+      scrollbar-width: none;
+    }
+    .rail nav::-webkit-scrollbar { display: none; }
+    .rail a {
+      padding: 13px 16px 12px 0;
+      white-space: nowrap;
+      border-left: 0;
+    }
+    .rail a::before {
+      left: 0; top: auto; bottom: 0;
+      width: calc(100% - 16px); height: 1px;
+      transform: scaleX(0);
+      transform-origin: left center;
+    }
+    .rail a.active::before { transform: scaleX(1); }
+    .rail .rail-note { display: none; }
+    main { padding-top: 8px; }
+    section { padding-top: 64px; scroll-margin-top: 56px; }
+    .layer { grid-template-columns: minmax(0,1fr); gap: 2px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <h1>prodrec <span class="dim">— дослідження ринку</span></h1>
+    <p class="lede">
+      Дев'ять продуктів у трьох групах, п'ять із них розібрані по осях. Далі — п'ять патернів
+      вводу і те, що з усього цього випливає для prodrec: спільна ознака ринку і головна біль
+      користувача, під яку продукт будується.
+    </p>
+    <div class="meta">
+      <span>Зібрано <b>7–8 серпня 2026</b></span>
+      <span><b>9</b> продуктів</span>
+      <span><b>5</b> у порівнянні по осях</span>
+      <span><b>10</b> скрінів, 1440×900</span>
+      <span>Скріни зняті особисто</span>
+    </div>
+  </header>
+
+  <aside class="rail">
+    <nav id="nav">
+      <a href="#competitors">Конкуренти</a>
+      <a href="#benchmark">Бенчмарк</a>
+      <a href="#patterns">Патерни</a>
+      <a href="#findings">Висновки</a>
+      <a href="#screens">Скріни</a>
+    </nav>
+    <p class="rail-note">
+      Джерела: competitors.md, ux-patterns.md, positioning.md
+    </p>
+  </aside>
+
+  <main>
+
+    <!-- ===================== КОНКУРЕНТИ ===================== -->
+    <section id="competitors">
+      <h2>Конкуренти</h2>
+      <p class="sec-lede">
+        Три групи розрізняються не розміром компанії, а тим, наскільки близько продукт стоїть
+        до задачі prodrec. Аспіраційні в порівняння по осях не йдуть: інша аудиторія і монетизація,
+        вони потрібні як референс ремесла, а не як конкурент.
+      </p>
+
+      <h3><span class="tag">ХАРД</span>Той самий продукт, та сама аудиторія</h3>
+      <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Продукт</th><th>Чому тут</th><th>Що вивчити</th></tr></thead>
+          <tbody>
+            <tr>
+              <th><a href="https://freelancepaycalculator.com/">Freelance Pay Calculator</a></th>
+              <td>Безкоштовний веб-калькулятор денної і годинної ставки з податком. Найближча форма до prodrec.</td>
+              <td>Як пояснюють формулу — звідки взялася цифра. І де їхня межа: разовий калькулятор без пам'яті.</td>
+            </tr>
+            <tr>
+              <th><a href="https://hnry.com.au/">Hnry</a></th>
+              <td>Обіцянка один в один: «ніколи не думай про податок», показують чисте на руки. Аудиторія — соло, sole trader.</td>
+              <td>Подача однієї обіцянки замість списку фіч. Сценарій «прийшло → відклали податок → чисте».</td>
+            </tr>
+            <tr>
+              <th><a href="https://www.hellobonsai.com/taxes">Bonsai</a></th>
+              <td>Комбайн для фрилансера з блоком податків. Забирає ту саму аудиторію ширше.</td>
+              <td>Чого не робити: важкий, скарги на підтримку. Аргумент бути маленьким. Плюс цінова сходинка.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><span class="tag">СОФТ</span>Інший продукт, та сама базова задача</h3>
+      <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Продукт</th><th>Чому тут</th><th>Що вивчити</th></tr></thead>
+          <tbody>
+            <tr>
+              <th><a href="https://toggl.com/track/">Toggl Track</a></th>
+              <td>Трекінг проєктів без грошей на виході. Одиниця — година.</td>
+              <td>Звіти й фільтри: «скільки цей клієнт дав за квартал». Порожні стани.</td>
+            </tr>
+            <tr>
+              <th><a href="https://www.getharvest.com/">Harvest</a></th>
+              <td>Трекінг, доведений до суми і рахунку клієнту.</td>
+              <td>Перехід «час → сума». Картка проєкту з бюджетом і залишком.</td>
+            </tr>
+            <tr>
+              <th>Google&nbsp;Sheets / Notion</th>
+              <td><b>Головний реальний конкурент:</b> більшість соло веде дні в таблиці.</td>
+              <td>Які колонки люди заводять руками — готовий список полів. І що таблиця не вміє: швидко занести день з телефона.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><span class="tag">АСПІРАЦІЙНІ</span>Еталони ремесла, не конкуренти</h3>
+      <div class="scroll">
+        <table class="wide">
+          <thead><tr><th>Продукт</th><th>Чому тут</th><th>Що вивчити</th></tr></thead>
+          <tbody>
+            <tr>
+              <th><a href="https://linear.app/">Linear</a></th>
+              <td>Планка ремесла в категорії трекінгу.</td>
+              <td>Тиша інтерфейсу: ієрархія типографікою і відступами, майже без кольору. Система станів.</td>
+            </tr>
+            <tr>
+              <th><a href="https://copilot.money/">Copilot Money</a></th>
+              <td>Еталон подачі грошей людині.</td>
+              <td>Головне число, валюта, м'які кольори замість червоно-зеленого світлофора.</td>
+            </tr>
+            <tr>
+              <th><a href="https://www.strava.com/">Strava</a></th>
+              <td>Перетворює нудний лог у те, куди хочеться повертатись.</td>
+              <td>Агрегація й ритм: тижневі підсумки, серії, «цей місяць проти минулого».</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== БЕНЧМАРК ===================== -->
+    <section id="benchmark">
+      <h2>Бенчмарк</h2>
+      <p class="sec-lede">
+        П'ять продуктів по п'яти осях. Перша колонка зафіксована — таблицю можна гортати вбік.
+      </p>
+
+      <div class="scroll">
+        <table class="stick">
+          <thead>
+            <tr>
+              <th></th>
+              <th><a href="https://freelancepaycalculator.com/">Freelance Pay Calculator</a></th>
+              <th><a href="https://hnry.com.au/">Hnry</a></th>
+              <th><a href="https://www.hellobonsai.com/">Bonsai</a></th>
+              <th><a href="https://toggl.com/track/">Toggl Track</a></th>
+              <th><a href="https://www.getharvest.com/">Harvest</a></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Аудиторія</th>
+              <td>Соло, який рахує ставку. 7 юрисдикцій на вибір: US, UK, DE, FR, UAE, IND, інші</td>
+              <td>Sole trader в AU / NZ / UK. Жорстко одна юрисдикція</td>
+              <td>Фрилансери й малі агенції, US-центрично (1099, квартальний податок)</td>
+              <td>Команди — «where teams and time tracking data meet». Соло на безкоштовному</td>
+              <td>Команди й агенції, але Free-тариф підписаний «built for individual freelancers»</td>
+            </tr>
+            <tr>
+              <th>Основа продукту</th>
+              <td>Односторінковий калькулятор, без реєстрації</td>
+              <td>Сервіс, не софт: бухгалтерія як послуга + власний рахунок</td>
+              <td>Комбайн: CRM, проєкти, час, рахунки, контракти + Bonsai Tax</td>
+              <td>Таймер + звіти</td>
+              <td>Трекер часу, зшитий з рахунками</td>
+            </tr>
+            <tr>
+              <th>Ключовий механізм</th>
+              <td>Від бажаного чистого доходу назад до потрібної ставки. Віднімає вихідні, свята, відпустку, лікарняні, % білабельності → <b class="num">226</b> білабельних днів → денна ставка</td>
+              <td>Гроші клієнта приходять на Hnry-рахунок → податок утримується автоматично → на карту падає вже чисте</td>
+              <td>Витрати з банку → категоризація → списання → оцінка квартального податку</td>
+              <td>Старт / стоп → запис → звіт по проєкту. Білабельні ставки на платних тарифах</td>
+              <td>Години → рахунок клієнту → оплата</td>
+            </tr>
+            <tr>
+              <th>Довіра</th>
+              <td>Прозора формула + ринкові бенчмарки ставок за професією і рівнем</td>
+              <td>Trustpilot <b class="num">682</b> відгуки на першому екрані, живі бухгалтери, service agreement</td>
+              <td><b class="num">1030+</b> відгуків, куплений Zoom, кейси. Мінус: скарги на підтримку і затримки виплат</td>
+              <td>Масштаб, <b class="num">100+</b> інтеграцій, безкоштовний тариф назавжди</td>
+              <td>Логотипи VW, FedEx, Yale, «понад <b class="num">70 000</b> компаній»</td>
+            </tr>
+            <tr>
+              <th>Монетизація</th>
+              <td>Безкоштовно. Партнерські посилання на бухгалтерський софт + PDF-звіт</td>
+              <td><b class="num">1% + GST</b> з кожного платежу, стеля <span class="num">$1 500</span>/рік. Без підписки</td>
+              <td>Підписка <span class="num">$9 / $19 / $29 / $49</span> за юзера на місяць (річна оплата)</td>
+              <td>Free / <span class="num">$9 / $14</span> за ліцензію на місяць</td>
+              <td>Free (1 місце, 2 проєкти) / <span class="num">$9 / $14</span> за місце + оплата за використання</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Дані зібрані з відкритих сторінок 7 серпня 2026. Продуктові екрани Hnry, Bonsai, Toggl і Harvest закриті логіном — оцінка за маркетинговими сторінками.</p>
+    </section>
+
+    <!-- ===================== ПАТЕРНИ ===================== -->
+    <section id="patterns">
+      <h2>Патерни</h2>
+      <p class="sec-lede">
+        Дві різні речі під одним словом: як влаштований ринок і як влаштований ввід даних.
+        Перше визначає позиціювання, друге — інтерфейс.
+      </p>
+
+      <h3><span class="tag">РИНОК</span>Три спільні патерни</h3>
+      <ol class="findings">
+        <li>
+          <b>Усі рахують назад від грошей, а не від часу.</b>
+          Цінність не в записі, а в підсумковій сумі: ставка, рахунок, податок.
+          Навіть таймерні продукти виводять до суми.
+        </li>
+        <li>
+          <b>Вхід безкоштовний, гроші — за продовження.</b>
+          У всіх п'ятьох або free-тариф, або відкритий калькулятор. Платять не за розрахунок,
+          а за те, щоб він зберігся і повторився сам.
+        </li>
+        <li>
+          <b>Довіра купується соціальним доказом на першому екрані.</b>
+          Trustpilot, кількість відгуків, логотипи клієнтів — вище за опис фіч, без винятку.
+        </li>
+      </ol>
+
+      <h3><span class="tag">ЧАС</span>Коли кожен дає цифру</h3>
+      <p class="narrow">
+        Та сама ознака в розрізі часу: різниця між конкурентами не у функціях, а в тому,
+        в який момент вони ставлять відповідь.
+      </p>
+      <div class="scroll">
+        <table class="stick">
+          <thead><tr><th>Продукт</th><th>Коли дає цифру</th><th>Що лишається між подіями</th></tr></thead>
+          <tbody>
+            <tr><th>Freelance Pay Calculator</th><td><i>До</i> роботи, один раз — яка ставка мені потрібна</td><td>Нічого. Вкладку закрив — цифри немає</td></tr>
+            <tr><th>Hnry</th><td><i>У мить платежу</i> — скільки впало чистими</td><td>Баланс рахунку. Але тільки коли платіж стався</td></tr>
+            <tr><th>Bonsai</th><td><i>У кінці кварталу</i> — скільки винен податковій</td><td>Дані копляться, відповідь чекає до звіту</td></tr>
+            <tr><th>Toggl / Harvest</th><td><i>Після</i> роботи, коли виставляєш рахунок</td><td>Журнал годин. Стан треба зібрати звітом самому</td></tr>
+            <tr><th>Google Sheets</th><td>Тоді, коли себе змусив</td><td>Таблиця, яка не рахує, поки ти в неї не сів</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><span class="tag">ІНТЕРФЕЙС</span>П'ять патернів вводу</h3>
+      <p class="narrow">
+        Розрізняються не виглядом, а тим, <b>звідки береться запис про роботу</b>.
+        Це головна вісь; кольори й панелі вторинні.
+      </p>
+      <div class="scroll">
+        <table class="stick">
+          <thead>
+            <tr><th>Патерн</th><th>Як працює</th><th>Приклади</th><th>Підходить, коли</th><th>Ламається, коли</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>1. Календар-полотно</th>
+              <td>Сітка місяця, день = клітинка. Клік або drag фарбує день проєктом. Підсумок рахується збоку живцем</td>
+              <td>Google Calendar, Notion Calendar, Airbnb, Cal.com</td>
+              <td>Одиниця обліку — день; 1–3 проєкти; ввід ретроспективний; треба бачити прогалини</td>
+              <td>В один день три проєкти по 2.5 год; горизонт довший за місяць; вузький мобільний</td>
+            </tr>
+            <tr>
+              <th>2. Таймер подій</th>
+              <td>Старт / стоп, система пише факт часу. Інтервал потім треба віднести до проєкту</td>
+              <td>Toggl, Clockify, Harvest, Everhour</td>
+              <td>Платять за фактичні години; клієнт вимагає деталізацію; часте перемикання</td>
+              <td>Забув запустити — даних немає; забув зупинити — дані брехливі; денна ставка робить хвилини зайвими</td>
+            </tr>
+            <tr>
+              <th>3. Timesheet-матриця</th>
+              <td>Рядки — проєкти, колонки — дні, у клітинках години. Суми по обох осях</td>
+              <td>Jira Tempo, Clockify timesheet, Excel</td>
+              <td>Багато проєктів; день реально ділиться; треба швидко ввести обсяг з клавіатури</td>
+              <td>Найменш людяний з п'яти — саме він викликає відразу до обліку; на мобільному не працює</td>
+            </tr>
+            <tr>
+              <th>4. Швидкий ввід рядком</th>
+              <td>Одне поле, природна мова: «Клієнт А вчора». Парсер створює записи</td>
+              <td>Things, Todoist, Superhuman, Linear, Slack-боти</td>
+              <td>Досвідчений користувач, висока частота вводу; <b>як надбудова</b> над іншим патерном</td>
+              <td>Перший день: порожнє поле не показує, що можна написати. Двозначність коштує довіри</td>
+            </tr>
+            <tr>
+              <th>5. Документ-калькулятор</th>
+              <td>Інтерфейс — сам інвойс. Рядки в ньому і є дні. Змінив ставку — сума перерахувалась тут же</td>
+              <td>Stripe Invoicing, Bonsai, Notion-шаблони</td>
+              <td>Мета — виставити рахунок, а не вести облік; записів небагато</td>
+              <td>Щоденний ввід: відмічати сьогоднішній день у фінансовому документі незручно й тривожно</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note"><b>Вибір для prodrec:</b> календар-полотно як основа, timesheet-матриця третім виглядом тих самих даних — за умови, що поділений день стане нормою. Таймер відпадає: одиниця не та, вимагає присутності в момент роботи і не ремонтується, коли його забули.</p>
+    </section>
+
+    <!-- ===================== ВИСНОВКИ ===================== -->
+    <section id="findings">
+      <h2>Висновки</h2>
+      <p class="sec-lede">
+        Що з усього цього випливає: одна спільна ознака, три вільні місця, одна біль
+        і три питання, на які відповіді ще немає.
+      </p>
+
+      <div class="keystone">
+        <p class="kicker">Спільна ознака</p>
+        <p>
+          Усі продають <b>впевненість у цифрі</b> — і всі дають її разово, в точці події.
+          Облік у них не цінність, а ціна, яку користувач платить за цю цифру.
+          <b>Між подіями цифру не тримає живою ніхто.</b>
+        </p>
+      </div>
+
+      <h3>Три вільні місця</h3>
+      <ol class="findings">
+        <li>
+          <b>Одиниця обліку.</b>
+          Година (Toggl, Harvest) проти доходу і ставки (Calculator, Hnry).
+          День не є основою в жодного — денна ставка існує лише як похідне число.
+          Це вільне місце, і саме воно робить запис дешевим: день майже бінарний факт,
+          година вимагає таймера й уваги протягом дня.
+        </li>
+        <li>
+          <b>Прив'язка до юрисдикції.</b>
+          Hnry і Bonsai вросли в одну податкову систему і тому не можуть на «Світ».
+          Калькулятор бере мультикраїнний перемикач — і через це не може автоматизувати сплату.
+        </li>
+        <li>
+          <b>Соло проти команди.</b>
+          Toggl і Harvest продають місця. Соло-фрилансер у них завжди на найдешевшому краю
+          і ніколи не є головним героєм.
+        </li>
+      </ol>
+
+      <h3>Головна біль користувача</h3>
+      <p class="narrow">
+        Не «не вмію порахувати ставку» — це разова задача, її калькулятор закриває за дві
+        хвилини і безкоштовно. Біль звучить інакше:
+      </p>
+
+      <blockquote class="pain">
+        <p>«Я не знаю, як у мене йде цей місяць — і кожне рішення приймаю наосліп.»</p>
+        <footer>
+          Брати цей проєкт чи почекати кращого? Можна дозволити собі три дні паузи?
+          Я зараз краще чи гірше, ніж у травні?
+        </footer>
+      </blockquote>
+
+      <dl class="layers">
+        <div class="layer">
+          <dt>Видимий шар</dt>
+          <dd>Вести облік незручно. Забув, ліньки, таблиця з телефона — біль.</dd>
+        </div>
+        <div class="layer">
+          <dt>Справжній шар</dt>
+          <dd>Тривога від невизначеності. Облік — просто ціна, яку платиш, щоб цю тривогу зняти.</dd>
+        </div>
+        <div class="layer">
+          <dt>Наслідок</dt>
+          <dd><b>У всіх конкурентів ця ціна вища за полегшення. Тому люди кидають облік.</b></dd>
+        </div>
+      </dl>
+
+      <h3>Що це означає для prodrec</h3>
+      <ol class="findings">
+        <li>
+          <b>Запис має коштувати менше, ніж відповідь, яку він повертає.</b>
+          Тап → одразу оновлений стан місяця. Не «дякую, збережено».
+        </li>
+        <li>
+          <b>Головний екран — це стан, а не журнал.</b>
+          Список днів вторинний. Відповідь на «як мій місяць» видно без жодної дії.
+        </li>
+        <li>
+          <b>Довіру бери формулою, не відгуками.</b>
+          Відгуків немає і не буде рік. Показуй, звідки взялася цифра — це те, що робить
+          Calculator, і це працює.
+        </li>
+      </ol>
+
+      <h3>Три відкриті питання</h3>
+      <ul class="plain">
+        <li><b>Ринок.</b> Якщо «Світ» — податок вводить користувач сам, і обіцянка слабша за «ми порахуємо за тебе». Чи готові на цей розмін заради охоплення?</li>
+        <li><b>Навіщо повертатись.</b> Калькулятор відкривають один раз. Що дає причину відкрити prodrec на 30-й день? Судячи з ознаки вище, це діра не в prodrec, а в усій категорії.</li>
+        <li><b>Гроші.</b> Підписка, відсоток від доходу чи безкоштовно з партнерками? Відсоток недоступний без власного рахунку і юрисдикції — отже реально лишається два варіанти.</li>
+      </ul>
+    </section>
+
+    <!-- ===================== СКРІНИ ===================== -->
+    <section id="screens">
+      <h2>Скріни</h2>
+      <p class="sec-lede">
+        Зняті особисто 7 серпня 2026, 1440×900. Клік відкриває оригінал.
+        Продуктові екрани чотирьох із п'яти закриті логіном — це саме по собі дані про категорію.
+      </p>
+
+      <div class="grid">
+        <figure>
+          <a href="screens/01b-freelancepaycalculator-result.png"><img src="screens/01b-freelancepaycalculator-result.png" alt="Результат калькулятора: годинна і денна ставка"></a>
+          <figcaption><b>Freelance Pay Calculator</b> — ключовий екран: потрібна годинна <span class="num">$118.70</span> і денна ставка <span class="num">$949.60</span></figcaption>
+        </figure>
+        <figure>
+          <a href="screens/01-freelancepaycalculator-home.png"><img src="screens/01-freelancepaycalculator-home.png" alt="Головна сторінка Freelance Pay Calculator"></a>
+          <figcaption><b>Freelance Pay Calculator</b> — уся сторінка калькулятора цілком</figcaption>
+        </figure>
+        <figure>
+          <a href="screens/02-hnry-home.png"><img src="screens/02-hnry-home.png" alt="Головна сторінка Hnry"></a>
+          <figcaption><b>Hnry</b> — головна, обіцянка «Pay less tax»</figcaption>
+        </figure>
+        <figure>
+          <a href="screens/03-hnry-login.png"><img src="screens/03-hnry-login.png" alt="Екран входу Hnry"></a>
+          <figcaption><b>Hnry</b>, продукт — <span class="locked">доступ обмежений</span> (логін)</figcaption>
+        </figure>
+        <figure>
+          <a href="screens/04-bonsai-taxes.png"><img src="screens/04-bonsai-taxes.png" alt="Сторінка Bonsai Tax"></a>
+          <figcaption><b>Bonsai Tax</b> — сторінка продукту</figcaption>
+        </figure>
+        <figure>
+          <a href="screens/05-bonsai-app-login.png"><img src="screens/05-bonsai-app-login.png" alt="Екран входу Bonsai"></a>
+          <figcaption><b>Bonsai</b>, продукт — <span class="locked">доступ обмежений</span> (логін + захист Cloudflare)</figcaption>
+        </figure>
+        <figure>
+          <a href="screens/06-toggl-home.png"><img src="screens/06-toggl-home.png" alt="Головна сторінка Toggl Track"></a>
+          <figcaption><b>Toggl Track</b> — головна</figcaption>
+        </figure>
+        <figure>
+          <a href="screens/07-toggl-app-login.png"><img src="screens/07-toggl-app-login.png" alt="Екран входу Toggl Track"></a>
+          <figcaption><b>Toggl Track</b>, продукт — <span class="locked">доступ обмежений</span> (логін)</figcaption>
+        </figure>
+        <figure>
+          <a href="screens/08-harvest-home.png"><img src="screens/08-harvest-home.png" alt="Головна сторінка Harvest"></a>
+          <figcaption><b>Harvest</b> — головна</figcaption>
+        </figure>
+        <figure>
+          <a href="screens/09-harvest-login.png"><img src="screens/09-harvest-login.png" alt="Екран входу Harvest"></a>
+          <figcaption><b>Harvest</b>, продукт — <span class="locked">доступ обмежений</span> (логін)</figcaption>
+        </figure>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="colophon">
+    <p>prodrec — дослідження ринку. Зібрано з <b>competitors.md</b>, <b>ux-patterns.md</b> і <b>positioning.md</b>, 8 серпня 2026.</p>
+    <p>Сторінка автономна: відкривається подвійним кліком, працює без інтернету. Скріни лежать поруч у <b>screens/</b>.</p>
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('#nav a'));
+    var sections = links
+      .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+      .filter(Boolean);
+    if (!sections.length) return;
+
+    function setActive(id) {
+      links.forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+      });
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+      var visible = entries
+        .filter(function (e) { return e.isIntersecting; })
+        .sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; });
+      if (visible.length) setActive(visible[0].target.id);
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+
+    sections.forEach(function (s) { observer.observe(s); });
+    setActive(sections[0].id);
+  })();
+</script>
+</body>
+</html>
