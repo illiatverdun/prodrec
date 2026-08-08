@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>prodrec — продукт</title>
+<style>
+  :root {
+    --bg:        #0e0f12;
+    --surface:   #15171b;
+    --surface-2: #1b1e23;
+    --line:      #24282f;
+    --line-soft: #1c2026;
+    --fg:        #e9eaee;
+    --fg-2:      #b9bdc6;
+    --muted:     #8b909b;
+    --accent:    #8ab5a8;
+    --warn:      #c8845c;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 15.5px/1.65 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- каркас ---------- */
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 28px 128px;
+    display: grid;
+    grid-template-columns: 186px minmax(0, 1fr);
+    gap: 0 60px;
+  }
+  header.masthead { grid-column: 1 / -1; padding: 72px 0 0; }
+  .rail { position: sticky; top: 0; align-self: start; padding-top: 76px; }
+  main { min-width: 0; padding-top: 76px; }
+
+  h1 {
+    font-size: clamp(30px, 4.4vw, 46px);
+    line-height: 1.08;
+    letter-spacing: -0.032em;
+    font-weight: 600;
+    margin: 0 0 18px;
+    text-wrap: balance;
+  }
+  h1 .dim { color: var(--muted); font-weight: 400; }
+
+  .lede { max-width: 62ch; color: var(--fg-2); font-size: 17px; line-height: 1.6; margin: 0 0 28px; }
+
+  .meta {
+    display: flex; flex-wrap: wrap; gap: 10px 28px;
+    padding: 18px 0 0; border-top: 1px solid var(--line);
+    font-size: 13px; color: var(--muted);
+  }
+  .meta b { color: var(--fg-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  /* ---------- навігація ---------- */
+
+  .rail nav { display: flex; flex-direction: column; gap: 2px; }
+  .rail a {
+    position: relative; display: block;
+    padding: 7px 0 7px 16px;
+    font-size: 13.5px; color: var(--muted); text-decoration: none;
+    border-left: 1px solid var(--line);
+    transition: color .18s cubic-bezier(.16,1,.3,1);
+  }
+  .rail a::before {
+    content: ""; position: absolute; left: -1px; top: 0;
+    width: 1px; height: 100%; background: var(--accent);
+    transform: scaleY(0); transform-origin: center;
+    transition: transform .32s cubic-bezier(.16,1,.3,1);
+  }
+  .rail a:hover { color: var(--fg-2); }
+  .rail a.active { color: var(--fg); }
+  .rail a.active::before { transform: scaleY(1); }
+  .rail .rail-note {
+    margin-top: 26px; padding-left: 17px;
+    font-size: 12px; line-height: 1.5; color: #6d727c;
+  }
+
+  /* ---------- секції ---------- */
+
+  section { padding-top: 88px; scroll-margin-top: 24px; }
+  section:first-of-type { padding-top: 0; }
+  section > h2 {
+    font-size: clamp(22px, 2.6vw, 29px);
+    line-height: 1.15; letter-spacing: -0.022em; font-weight: 600;
+    margin: 0 0 10px; padding-top: 22px; border-top: 1px solid var(--line);
+  }
+  .sec-lede { max-width: 66ch; color: var(--muted); margin: 0 0 34px; }
+
+  h3 { font-size: 15.5px; font-weight: 600; letter-spacing: -0.006em; margin: 48px 0 12px; }
+  h3 .tag {
+    display: inline-block; margin-right: 10px;
+    font-size: 11px; letter-spacing: .1em; color: var(--muted); vertical-align: 1.5px;
+  }
+
+  p { max-width: 68ch; }
+  p.narrow { max-width: 62ch; }
+  a { color: inherit; text-decoration-color: var(--line); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--accent); }
+  a:focus-visible, .rail a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  strong, b { font-weight: 600; color: var(--fg); }
+
+  /* ---------- маркери, які мають лишитись видимими ---------- */
+
+  .unk { color: var(--warn); font-weight: 600; }
+  .orphan {
+    display: inline-block;
+    font-size: 10.5px; letter-spacing: .1em; font-weight: 600;
+    color: var(--warn);
+  }
+  .todo { color: var(--muted); font-weight: 600; }
+
+  /* ---------- таблиці ---------- */
+
+  .scroll {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+  }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; line-height: 1.55; }
+  th, td { text-align: left; vertical-align: top; padding: 13px 16px; border-bottom: 1px solid var(--line-soft); }
+  tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+  thead th { background: var(--surface-2); color: var(--fg); font-weight: 600; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  tbody th { background: var(--surface); color: var(--fg); font-weight: 600; }
+  td { color: var(--fg-2); }
+  td b, td strong { color: var(--fg); }
+  .stick tbody th, .stick thead th:first-child {
+    position: sticky; left: 0; z-index: 1; min-width: 150px;
+    border-right: 1px solid var(--line); white-space: normal;
+  }
+  .stick thead th:first-child { z-index: 2; }
+  .stick td { min-width: 168px; }
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .score { font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; }
+  .src { display: block; margin-top: 3px; font-size: 11.5px; color: var(--muted); }
+
+  .note { margin: 12px 0 0; max-width: 74ch; font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+  .note b { color: var(--fg-2); }
+
+  /* ---------- головна теза ---------- */
+
+  .keystone {
+    margin: 0 0 34px; padding: 26px 28px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  }
+  .keystone .kicker {
+    font-size: 11.5px; letter-spacing: .11em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 10px;
+  }
+  .keystone p { margin: 0; font-size: 19px; line-height: 1.5; letter-spacing: -0.012em; color: var(--fg); max-width: 62ch; }
+  .keystone p + p { margin-top: 14px; font-size: 14px; color: var(--fg-2); }
+
+  /* ---------- персони ---------- */
+
+  .persona {
+    max-width: 82ch; margin: 0 0 40px;
+    padding-top: 28px; border-top: 1px solid var(--line-soft);
+  }
+  .persona:first-of-type { padding-top: 0; border-top: 0; }
+  .persona--main { padding-left: 22px; border-left: 1px solid var(--accent); border-top: 0; }
+  .persona h4 {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px;
+    font-size: 17.5px; font-weight: 600; letter-spacing: -0.014em; margin: 0 0 5px;
+  }
+  .persona h4 .badge { font-size: 10.5px; font-weight: 600; letter-spacing: .11em; color: var(--accent); }
+  .persona .role { margin: 0 0 20px; font-size: 13px; color: var(--muted); }
+
+  .fields { display: grid; gap: 13px; margin: 0; }
+  .field { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 20px; align-items: baseline; }
+  .field dt { font-size: 12.5px; color: var(--muted); }
+  .field dd { margin: 0; color: var(--fg-2); font-size: 14.5px; line-height: 1.6; }
+  .field dd b { color: var(--fg); }
+  .no-quote {
+    padding: 11px 14px; border: 1px dashed var(--line); border-radius: 5px;
+    color: var(--muted); font-size: 13.5px; line-height: 1.55;
+  }
+
+  /* ---------- карта екранів ---------- */
+
+  .tree {
+    margin: 0; padding: 22px 24px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+    overflow-x: auto;
+    font: 12.5px/1.85 var(--mono);
+    color: var(--fg-2);
+    white-space: pre;
+  }
+  .tree .scr { color: var(--fg); font-weight: 600; }
+  .tree .job { color: var(--accent); }
+  .tree .star { color: var(--accent); }
+  .tree .cm { color: var(--muted); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0 0 16px; font-size: 12.5px; color: var(--muted); }
+  .legend span b { color: var(--fg-2); }
+
+  /* ---------- mermaid ---------- */
+
+  .diagram {
+    margin: 18px 0 0; padding: 20px 16px;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+    overflow-x: auto;
+  }
+  .diagram pre.mermaid { margin: 0; text-align: center; }
+  /* підписи на стрілках «так» / «ні» — під палітру сторінки */
+  .diagram .edgeLabel, .diagram .edgeLabel p, .diagram .edgeLabel span {
+    color: var(--muted) !important;
+    background: var(--surface) !important;
+    fill: var(--muted) !important;
+  }
+  .diagram .edgeLabel rect { fill: var(--surface) !important; }
+  .diagram pre.mermaid:not([data-processed]) {
+    font: 12px/1.6 var(--mono); color: var(--muted); text-align: left; white-space: pre;
+  }
+  .scenario { margin-bottom: 66px; }
+  .scenario h3 { margin-top: 0; }
+  .scenario .recap { max-width: 70ch; margin: 18px 0 0; color: var(--fg-2); font-size: 14.5px; }
+
+  footer.colophon {
+    grid-column: 1 / -1; margin-top: 96px; padding-top: 22px;
+    border-top: 1px solid var(--line); font-size: 12.5px; color: var(--muted);
+  }
+  footer.colophon p { max-width: 74ch; margin: 0 0 6px; }
+
+  @media (max-width: 940px) {
+    .page { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 0 20px 96px; }
+    header.masthead { padding-top: 48px; }
+    .rail {
+      position: sticky; top: 0; z-index: 5; padding: 0; margin: 26px -20px 0;
+      background: rgba(14,15,18,.92); backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+    }
+    .rail nav { flex-direction: row; gap: 0; overflow-x: auto; padding: 0 20px; scrollbar-width: none; }
+    .rail nav::-webkit-scrollbar { display: none; }
+    .rail a { padding: 13px 16px 12px 0; white-space: nowrap; border-left: 0; }
+    .rail a::before { left: 0; top: auto; bottom: 0; width: calc(100% - 16px); height: 1px; transform: scaleX(0); transform-origin: left center; }
+    .rail a.active::before { transform: scaleX(1); }
+    .rail .rail-note { display: none; }
+    main { padding-top: 8px; }
+    section { padding-top: 64px; scroll-margin-top: 56px; }
+    .field { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+    .persona--main { padding-left: 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="masthead">
+    <h1>prodrec <span class="dim">— продукт</span></h1>
+    <p class="lede">
+      Хто ця людина, що вона намагається зробити, з яких екранів це складається
+      і де вона застрягає. Зібрано з <b>people/personas.md</b> і <b>product/structure.md</b>;
+      під ними — <b>research/research.md</b>.
+    </p>
+    <div class="meta">
+      <span><b>4</b> персони, одна головна</span>
+      <span><b>1 + 4</b> задачі</span>
+      <span><b>4</b> сценарії</span>
+      <span><b>7</b> функцій-сиріт</span>
+      <span>Стан на <b>8 серпня 2026</b></span>
+    </div>
+  </header>
+
+  <aside class="rail">
+    <nav id="nav">
+      <a href="#personas">Персони</a>
+      <a href="#jobs">Задачі</a>
+      <a href="#screens">Екрани</a>
+      <a href="#scenarios">Сценарії</a>
+    </nav>
+    <p class="rail-note">
+      <span class="unk">[?]</span> — припущення без даних.<br>
+      <span class="orphan">СИРОТА</span> — не закриває задач.<br>
+      Обидві позначки лишені навмисно.
+    </p>
+  </aside>
+
+  <main>
+
+    <!-- ===================== ПЕРСОНИ ===================== -->
+    <section id="personas">
+      <h2>Персони</h2>
+      <p class="sec-lede">
+        Розділені за поведінкою, не за демографією. Кожен блок спирається на конкретне місце
+        в ресерчі; де даних немає — стоїть <span class="unk">[?]</span> і формулювання гіпотези.
+      </p>
+
+      <div class="keystone">
+        <p class="kicker">Що треба знати перед читанням</p>
+        <p>
+          У ресерчі <b>немає жодної репліки живої людини</b> — ні інтерв'ю, ні поста з форуму,
+          ні дослівного відгуку. Усе про людей виведено з чужих маркетингових сторінок.
+        </p>
+        <p>
+          Тому поле «Цитата» порожнє в усіх чотирьох персон. Замість неї вказано, де шукати
+          справжню. Вигадана репліка потім читалася б як факт.
+        </p>
+      </div>
+
+      <div class="persona persona--main">
+        <h4>Та, що веде дні в таблиці <span class="badge">ГОЛОВНА</span></h4>
+        <p class="role">Соло, 1–3 клієнти одночасно, продає дні. Облік — у Google Sheets.</p>
+        <dl class="fields">
+          <div class="field"><dt>Чому головна</dt>
+            <dd>Єдина точка, де сходяться всі три знахідки ресерчу: день як вільне місце на ринку,
+              соло як той, кого обслуговують за залишковим принципом, і таблиця як реальний конкурент.
+              Плюс технічне: обраний патерн вводу працює саме при 1–3 проєктах.</dd></div>
+          <div class="field"><dt>Контекст</dt>
+            <dd>Соло на себе <span class="unk">[?]</span>, кожен клієнт бере в неї дні, а не години
+              <span class="unk">[?]</span> — це найбільше припущення проєкту. Дні в таблиці, податок
+              формулою внизу. Вік, гео, стаж — <span class="unk">[?]</span>, у ресерчі цього немає.</dd></div>
+          <div class="field"><dt>Задачі</dt>
+            <dd>Відмітити відпрацьовані дні · побачити суму за місяць · зрозуміти, скільки лишиться
+              після податку й комісії · зібрати цифру для рахунку.</dd></div>
+          <div class="field"><dt>Болі</dt>
+            <dd>Таблиця не рахує, поки в неї не сів — стану місяця між заходами не існує.
+              З телефона занести день майже неможливо. Сума брудна: до податку й комісії.
+              Формули ламаються при копіюванні місяця <span class="unk">[?]</span>.
+              Дні, домовленості й рахунки в трьох різних місцях <span class="unk">[?]</span>.</dd></div>
+          <div class="field"><dt>Довіра</dt>
+            <dd>Видима формула — видно, звідки взялася цифра. Робота без реєстрації.</dd></div>
+          <div class="field"><dt>Відлякує</dt>
+            <dd>Тарифи «за місце», бо вона одна. Юрисдикція, якої немає в списку.
+              Реєстрація на першому екрані <span class="unk">[?]</span>.</dd></div>
+          <div class="field"><dt>Цитата</dt>
+            <dd><p class="no-quote"><span class="unk">[?]</span> Немає. Шукати в: r/freelance
+              і r/graphic_design за day rate і spreadsheet; відгуки на Google&nbsp;Sheets-шаблони
+              для фрилансерів.</p></dd></div>
+        </dl>
+      </div>
+
+      <div class="persona">
+        <h4>Той, у кого один довгий контракт</h4>
+        <p class="role">Фултайм на одного замовника, 5 днів на тиждень, ставка за день.</p>
+        <dl class="fields">
+          <div class="field"><dt>Контекст</dt>
+            <dd>Один замовник забирає весь час на місяці вперед. Наскільки сегмент масовий —
+              <span class="unk">[?]</span>, не міряли. Але день як одиниця тут підтверджений
+              ззовні: у британському контрактингу виставляти рахунок за день — стандарт.</dd></div>
+          <div class="field"><dt>Задачі</dt>
+            <dd>Не так трекати, як рахувати: скільки робочих днів вийшло, скільки з'їли свята
+              й відпустка, скільки це в грошах на руки.</dd></div>
+          <div class="field"><dt>Болі</dt>
+            <dd>Усі трекери під багато проєктів, а йому треба один. Таймер безглуздий, коли день
+              завжди повний. У Harvest — чотири поля, щоб записати день, який завжди однаковий.</dd></div>
+          <div class="field"><dt>Довіра</dt>
+            <dd>Цифра збігається з тією, яку він порахував сам <span class="unk">[?]</span>.
+              Видно, які саме дні враховані.</dd></div>
+          <div class="field"><dt>Відлякує</dt>
+            <dd>Обов'язкове заведення проєктів і задач перед першим записом. Інтерфейс для агенції.</dd></div>
+          <div class="field"><dt>Цитата</dt>
+            <dd><p class="no-quote"><span class="unk">[?]</span> Немає. Шукати в: Trustpilot по Hnry —
+              там саме аудиторія sole trader; форуми контракторів UK та AU про day rate.</p></dd></div>
+        </dl>
+      </div>
+
+      <div class="persona">
+        <h4>Та, у кого фриланс поверх найму</h4>
+        <p class="role">У штаті на фултаймі, 1–2 проєкти ввечері й на вихідних.</p>
+        <dl class="fields">
+          <div class="field"><dt>Контекст</dt>
+            <dd><span class="unk">[?]</span> <b>Цієї персони в ресерчі немає взагалі.</b>
+              Сконструйована з патерну «забув запустити — даних немає», що описує рідкісного,
+              непослідовного користувача. Чи входить вона в аудиторію — рішення не ухвалене.</dd></div>
+          <div class="field"><dt>Задачі</dt>
+            <dd><span class="unk">[?]</span> Зрозуміти, чи вартий підробіток часу; не проґавити
+              податок; побачити, скільки він приніс за рік.</dd></div>
+          <div class="field"><dt>Болі</dt>
+            <dd>Відкриває облік раз на місяць — будь-який таймер тут мертвий за визначенням.
+              Через три тижні не пам'ятає, які дні працювала.</dd></div>
+          <div class="field"><dt>Довіра</dt>
+            <dd>Можливість заповнити заднім числом, не зламавши дані.</dd></div>
+          <div class="field"><dt>Відлякує</dt>
+            <dd>Підписка <span class="num">$9–14</span>/міс за інструмент на 20 хвилин на місяць.</dd></div>
+          <div class="field"><dt>Цитата</dt>
+            <dd><p class="no-quote"><span class="unk">[?]</span> Немає. Шукати в: треди про side
+              income; відгуки на безкоштовний тариф Toggl від людей поза командами.</p></dd></div>
+        </dl>
+      </div>
+
+      <div class="persona">
+        <h4>Той, хто ще не має ставки</h4>
+        <p class="role">Щойно вийшов у фриланс. Головне питання — скільки просити.</p>
+        <dl class="fields">
+          <div class="field"><dt>Контекст</dt>
+            <dd>Єдина персона, яку ресерч бачить прямо: під неї побудований цілий продукт —
+              Freelance Pay Calculator.</dd></div>
+          <div class="field"><dt>Задачі</dt>
+            <dd>Порахувати денну ставку від бажаного чистого доходу; звірити з ринком; не продешевити.</dd></div>
+          <div class="field"><dt>Болі</dt>
+            <dd>Калькулятор дає одну цифру — і все. Через місяць він не знає, чи вгадав:
+              пам'яті в калькулятора немає.</dd></div>
+          <div class="field"><dt>Довіра</dt>
+            <dd>Ринкові бенчмарки за професією і рівнем. Прозора формула замість чорної скриньки.</dd></div>
+          <div class="field"><dt>Відлякує</dt>
+            <dd><span class="unk">[?]</span> Режим «Світ», де податок вводиш сам — гіпотеза,
+              що для новачка це страшніше, ніж для досвідченого.</dd></div>
+          <div class="field"><dt>Цитата</dt>
+            <dd><p class="no-quote"><span class="unk">[?]</span> Немає. Шукати в: питання
+              «how much should I charge» у профільних спільнотах.</p></dd></div>
+        </dl>
+      </div>
+
+      <p class="note">
+        <b>Найнебезпечніше в цьому розділі:</b> «день є одиницею продажу» не перевірено для головної
+        персони. Британський контрактинг підтверджує день для <b>другої</b> персони, а не для першої.
+        Персона 3 вигадана цілком і зараз не впливає на жодне рішення.
+      </p>
+    </section>
+
+    <!-- ===================== ЗАДАЧІ ===================== -->
+    <section id="jobs">
+      <h2>Задачі</h2>
+      <p class="sec-lede">
+        Формат «Коли… я хочу… щоб…». Назв функцій у формулюваннях немає — тільки те, чого людина
+        хоче досягти. Задача без опори лежить нижче в гіпотезах.
+      </p>
+
+      <div class="keystone">
+        <p class="kicker">Головна задача</p>
+        <p>
+          <b>Коли</b> я працюю на себе і гроші приходять нерівно,
+          <b>я хочу</b> будь-якої миті розуміти, скільки я насправді заробив і скільки з цього моє,
+          <b>щоб</b> рішення про роботу й про відпочинок ухвалювати спокійно, а не навмання.
+        </p>
+        <p>
+          Перша половина стоїть твердо — читається з матриці конкурентів. Друга,
+          «ухвалювати спокійно», спирається на головну біль, яка позначена як
+          <span class="unk">[?]</span> гіпотеза: її вивели логічно, її ніхто не казав.
+        </p>
+      </div>
+
+      <h3><span class="tag">СУМІЖНІ</span>Чотири на шляху до головної</h3>
+      <div class="scroll">
+        <table class="stick">
+          <thead><tr><th>№</th><th>Коли… я хочу… щоб…</th><th>Персона</th></tr></thead>
+          <tbody>
+            <tr><th>1</th><td><b>Коли</b> робочий день закінчився, <b>я хочу</b> закрити питання обліку за нього одразу, <b>щоб</b> воно не накопичувалось у борг, який потім легше кинути, ніж розгребти</td><td>P1, P3</td></tr>
+            <tr><th>2</th><td><b>Коли</b> настав час просити гроші, <b>я хочу</b> назвати клієнту суму без сумніву, що вона правильна, <b>щоб</b> не перевіряти себе тричі й не боятися помилитись перед ним</td><td>P1, P2</td></tr>
+            <tr><th>3</th><td><b>Коли</b> я бачу, скільки прийшло, <b>я хочу</b> відрізняти чужі гроші від своїх, <b>щоб</b> не планувати життя з суми, частина якої мені не належить</td><td>P1, P2</td></tr>
+            <tr><th>4</th><td><b>Коли</b> я випав з обліку на кілька тижнів, <b>я хочу</b> повернутись без відчуття, що місяць уже втрачений, <b>щоб</b> не кидати все й не починати з нуля</td><td>P1, P3</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><span class="tag">МАТРИЦЯ</span>Задачі × персони × функції</h3>
+      <p class="narrow">
+        Оцінка 1–3 — наскільки задача важлива персоні. Уся колонка <b>P3</b> порожня навмисно:
+        персона вигадана, виводити з неї ваги означало б надати вагу вигаданому.
+      </p>
+      <div class="scroll">
+        <table class="stick">
+          <thead><tr><th>Задача</th><th>P1</th><th>P2</th><th>P3</th><th>P4</th><th>Функція prodrec</th><th>Конкуренти</th></tr></thead>
+          <tbody>
+            <tr><th>Головна</th>
+              <td><span class="score">3</span><span class="src">вісь бенчмарку</span></td>
+              <td><span class="score">2</span><span class="src">механізм 226 днів</span></td>
+              <td><span class="unk">[?]</span></td>
+              <td><span class="score">1</span><span class="src">приходить за ставкою</span></td>
+              <td>Підсумок місяця поруч із календарем</td>
+              <td><b>Ні.</b> Усі дають цифру в точці події</td></tr>
+            <tr><th>1 — закрити день</th>
+              <td><span class="score">3</span><span class="src">ключова проблема</span></td>
+              <td><span class="score">2</span><span class="src">дні однакові</span></td>
+              <td><span class="unk">[?]</span></td>
+              <td><span class="score">1</span><span class="src">обліку не веде</span></td>
+              <td>Календар: клік або протягування</td>
+              <td><b>Частково.</b> Harvest — модалка на 4 поля</td></tr>
+            <tr><th>2 — назвати суму</th>
+              <td><span class="score">3</span><span class="src">Harvest: години → рахунок</span></td>
+              <td><span class="score">3</span><span class="src">гроші на руки</span></td>
+              <td><span class="unk">[?]</span></td>
+              <td><span class="unk">[?]</span></td>
+              <td>Брутто по проєктах. PDF — <span class="todo">не збудовано</span></td>
+              <td><b>Так.</b> Harvest це вміє</td></tr>
+            <tr><th>3 — чужі й свої гроші</th>
+              <td><span class="score">3</span><span class="src">усі рахують від грошей</span></td>
+              <td><span class="score">3</span><span class="src">аудиторія Hnry</span></td>
+              <td><span class="unk">[?]</span></td>
+              <td><span class="score">3</span><span class="src">від чистого доходу назад</span></td>
+              <td>Податок + комісія → чистий прибуток</td>
+              <td><b>Частково.</b> Hnry — ціною однієї юрисдикції</td></tr>
+            <tr><th>4 — повернутись</th>
+              <td><span class="score">2</span><span class="src">видно прогалини</span></td>
+              <td><span class="score">1</span><span class="src">день завжди повний</span></td>
+              <td><span class="unk">[?]</span></td>
+              <td><span class="unk">[?]</span></td>
+              <td>Будь-який минулий день у календарі</td>
+              <td><b>Частково.</b> Календарні вміють, таймерні ні</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><span class="tag">ЯДРО</span>Три задачі, що визначають продукт</h3>
+      <p class="narrow">
+        Читається прямо з матриці: оцінка <b>3 у головної персони</b> і колонка конкурентів
+        <b>не «Так»</b>. Суміжна 2 має 3 у P1, але випадає — Harvest її вже закриває,
+        і змагатись там означало б витрачати сили на паритет.
+      </p>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Задача</th><th>Чому в ядрі</th></tr></thead>
+          <tbody>
+            <tr><th>Головна</th><td>Єдина в таблиці, яку не закриває взагалі ніхто</td></tr>
+            <tr><th>1 — закрити день</th><td>Найближчий, Harvest, вимагає чотирьох полів на день</td></tr>
+            <tr><th>3 — чужі й свої гроші</th><td>Hnry вміє, але ціною прив'язки до однієї юрисдикції</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><span class="tag">ГІПОТЕЗИ</span>Задачі без опори</h3>
+      <div class="scroll">
+        <table class="stick">
+          <thead><tr><th>№</th><th>Задача</th><th>Що її підтвердить</th></tr></thead>
+          <tbody>
+            <tr><th>Г1</th><td>Розуміти, чи я йду вгору чи вниз <span class="unk">[?]</span></td><td>Люди самі згадують порівняння з минулим періодом</td></tr>
+            <tr><th>Г2</th><td>Спиратись на період у рішенні про новий проєкт <span class="unk">[?]</span></td><td>Люди називають «брати чи не брати» серед рішень, де бракує цифри</td></tr>
+            <tr><th>Г3</th><td>Зрозуміти, чи не продешевив зі ставкою <span class="unk">[?]</span></td><td>Новачки повертаються до розрахунку вдруге</td></tr>
+            <tr><th>Г4</th><td>Виглядати як людина, у якої облік у порядку <span class="unk">[?]</span></td><td>Люди згадують, як їх сприймає клієнт. У ресерчі — жодного рядка</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ===================== ЕКРАНИ ===================== -->
+    <section id="screens">
+      <h2>Екрани</h2>
+      <p class="sec-lede">
+        Виведені з об'єктів продукту, зчитаних зі стану застосунку, а не придуманих.
+        Біля кожного екрана — задача, яку він закриває. Немає задачі — стоїть
+        <span class="orphan">СИРОТА</span>.
+      </p>
+
+      <div class="legend">
+        <span><b>★</b> — потрібен головній персоні</span>
+        <span><b>○</b> — не збудовано</span>
+        <span><b class="orphan">СИРОТА</b> — не закриває задач</span>
+      </div>
+
+<pre class="tree"><span class="scr">prodrec</span>
+│
+├─ <span class="star">★</span> <span class="scr">Завантаження — «LOADING…»</span>
+│      <span class="job">(Головна — стан входу: доки воно на екрані, продукту не існує)</span>
+│
+└─ <span class="star">★</span> <span class="scr">Місяць</span> <span class="cm">— єдиний екран продукту сьогодні</span>
+   │    <span class="job">(Головна: розуміти, скільки заробив і скільки моє)</span>
+   │
+   ├─ <span class="star">★</span> <span class="scr">Смуга місяця</span> <span class="cm">— крок назад і вперед</span>
+   │      <span class="job">(Суміжна 4: повернутись після пропуску)</span>
+   │
+   ├─ <span class="star">★</span> <span class="scr">Полотно днів</span>
+   │  │    <span class="job">(Суміжна 1: закрити облік за день одразу)</span>
+   │  │
+   │  ├─ <span class="star">★</span> <span class="scr">Вигляд «Календар»</span> <span class="cm">— клік або протягування</span>
+   │  │      <span class="job">(Суміжна 1)</span>
+   │  │
+   │  ├─ <span class="star">★</span> <span class="scr">Вибір проєкту для дня</span> <span class="cm">— поповер на клітинці</span>
+   │  │      <span class="job">(Суміжна 1)</span>
+   │  │
+   │  ├─ <span class="todo">○</span> <span class="star">★</span> <span class="scr">Порожній стан</span>
+   │  │      <span class="job">(Суміжна 1 — тут вирішується, чи буде перший запис узагалі)</span>
+   │  │
+   │  ├─ <span class="scr">Вигляд «Список»</span>
+   │  │      <span class="orphan">СИРОТА</span> <span class="cm">— календар уже закриває Суміжну 1</span>
+   │  │
+   │  └─ <span class="scr">Приховування вихідних</span>
+   │         <span class="orphan">СИРОТА</span> <span class="cm">— і гірше: створює глухий кут, див. сценарій 2</span>
+   │
+   ├─ <span class="star">★</span> <span class="scr">Секція проєктів</span>
+   │  │    <span class="job">(Суміжна 2: назвати клієнту суму без сумніву)</span>
+   │  │
+   │  ├─ <span class="star">★</span> <span class="scr">Рядок проєкту</span> <span class="cm">— назва, колір, днів, брутто</span>
+   │  │      <span class="job">(Суміжна 2)</span>
+   │  │
+   │  ├─ <span class="star">★</span> <span class="scr">Ставка проєкту</span>
+   │  │      <span class="job">(Суміжна 3 — без ставки чистого не існує)</span>
+   │  │
+   │  ├─ <span class="star">★</span> <span class="scr">Додати проєкт</span>
+   │  │      <span class="job">(Суміжна 1 — доки немає проєкту, день нікуди відмітити)</span>
+   │  │
+   │  └─ <span class="scr">Видалити проєкт</span> <span class="cm">— з підтвердженням</span>
+   │         <span class="job">(Суміжна 1</span> <span class="cm">— натяжка, кандидат у сироти)</span>
+   │
+   ├─ <span class="star">★</span> <span class="scr">Секція податку й комісії</span>
+   │      <span class="job">(Суміжна 3: відрізняти чужі гроші від своїх)</span>
+   │
+   ├─ <span class="scr">Валюта і курс</span>
+   │  │    <span class="orphan">СИРОТА</span> <span class="cm">— жодна задача не згадує валюту.</span>
+   │  │    <span class="cm">Найімовірніше означає пропущену задачу, а не зайву функцію</span>
+   │  │
+   │  └─ <span class="todo">○</span> <span class="star">★</span> <span class="scr">Застарілий курс</span> <span class="cm">— беззвучний фолбек</span>
+   │         <span class="job">(Суміжна 3)</span> <span class="cm">— курс із кешу підставляється мовчки</span>
+   │
+   └─ <span class="star">★</span> <span class="scr">Підсумок місяця</span> <span class="cm">— днів, брутто, податок, комісія, чистими</span>
+          <span class="job">(Головна)</span> <span class="cm">— решта екрана існує заради цих п'яти чисел</span>
+
+<span class="todo">○</span> <span class="scr">Рік</span> · <span class="job">(Г1 — гіпотеза, не задача. Будувати рано)</span>
+<span class="todo">○</span> <span class="scr">Рахунок — експорт для клієнта</span> · <span class="job">(Суміжна 2)</span> <span class="cm">— але ринок її вже закриває</span>
+<span class="todo">○</span> <span class="scr">Профіль і синхронізація</span> · <span class="orphan">СИРОТА</span>
+<span class="todo">○</span> <span class="scr">Налаштування</span> · <span class="orphan">СИРОТА</span> <span class="cm">— податок і валюта живуть на місці використання, і це правильно</span>
+</pre>
+
+      <h3>Функції-сироти</h3>
+      <p class="narrow">
+        Сирота не означає «непотрібна». Вона означає одне з двох: або функція зайва,
+        або в списку задач бракує задачі, яку вона закриває.
+      </p>
+      <div class="scroll">
+        <table class="stick">
+          <thead><tr><th>Функція</th><th>Стан</th><th>Чому сирота</th></tr></thead>
+          <tbody>
+            <tr><th>Три валюти з живим курсом</th><td>збудовано</td><td>Жодна задача не згадує валюту. <b>Найімовірніше бракує задачі</b> — про заробіток в одній валюті й життя в іншій</td></tr>
+            <tr><th>Приховування вихідних</th><td>збудовано</td><td>Не закриває нічого і створює глухий кут: працювала в суботу — відмітити нікуди</td></tr>
+            <tr><th>List як другий вигляд</th><td>збудовано</td><td>Календар уже закриває задачу 1</td></tr>
+            <tr><th>Акаунти й синхронізація</th><td>план</td><td>Жодна задача не говорить про кілька пристроїв</td></tr>
+            <tr><th>Річний огляд</th><td>план</td><td>Закриває тільки Г1, а Г1 — гіпотеза</td></tr>
+            <tr><th>Pro через Stripe</th><td>план</td><td>Бізнес-модель, не задача</td></tr>
+            <tr><th>Години для окремого дня</th><td>план</td><td>Уточнює точність задачі 1, окремої задачі не закриває</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">
+        <b>«Без реєстрації» навмисно не в цьому списку.</b> Вона теж не закриває задач — але стоїть
+        як тригер довіри головної персони, а тригери довіри й не мусять закривати задачі.
+      </p>
+    </section>
+
+    <!-- ===================== СЦЕНАРІЇ ===================== -->
+    <section id="scenarios">
+      <h2>Сценарії</h2>
+      <p class="sec-lede">
+        Кроки — тільки екрани з карти вище. Показані обидва фінали: успішний і той,
+        де людина застрягає. Глухих кутів більше, ніж успіхів — це і є найчесніше,
+        що видно з цих схем.
+      </p>
+
+      <div class="scenario">
+        <h3><span class="tag">ГОЛОВНА</span>Розуміти, скільки заробив і скільки моє</h3>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    A["Завантаження — LOADING…"] --> B{"Дані на місці?"}
+    B -->|ні| C["Порожній стан"]
+    B -->|так| D["Полотно днів"]
+    C --> C1{"Зрозуміло, з чого почати?"}
+    C1 -->|ні| Z1["ГЛУХИЙ КУТ: закрив вкладку, не зрозумівши продукт"]
+    C1 -->|так| E["Додати проєкт"]
+    E --> D
+    D --> F["Підсумок місяця"]
+    F --> G{"Ставка задана?"}
+    G -->|ні| H["Ставка проєкту"]
+    H --> F
+    G -->|так| I{"Податок і комісія задані?"}
+    I -->|ні| J["Секція податку й комісії"]
+    J --> F
+    I -->|так| K["Валюта і курс"]
+    K --> L{"Курс свіжий?"}
+    L -->|ні| M["Застарілий курс — беззвучний фолбек"]
+    L -->|так| N["Підсумок місяця — чистими"]
+    M --> N
+    N --> O{"Число збіглося з очікуванням?"}
+    O -->|так| S1["УСПІХ: знає, скільки заробила і скільки з цього її"]
+    O -->|ні| P["Секція проєктів"]
+    P --> Q{"Причину знайдено?"}
+    Q -->|так| F
+    Q -->|ні| Z2["ГЛУХИЙ КУТ: не вірить цифрі, повертається в таблицю"]
+    classDef ok stroke:#8ab5a8,stroke-width:2px;
+    classDef bad stroke:#c8845c,stroke-width:2px;
+    classDef wait stroke:#8b909b,stroke-width:2px;
+    class S1 ok;
+    class Z1,Z2 bad;
+    class A,M wait;
+</pre>
+        </div>
+        <p class="recap">
+          Першим людина бачить не продукт, а «LOADING…». Далі підсумок сам себе добудовує:
+          немає ставки — веде в проєкт, немає податку — веде в секцію податку. Курс може не
+          завантажитись, і тоді підставиться вчорашній — <b>мовчки</b>, це найтихіше місце сценарію.
+          Фінальна розвилка найважливіша: якщо число не збігається з очікуванням і причини не знайдено,
+          людина не просто йде — вона перестає вірити продукту й повертається в таблицю.
+        </p>
+      </div>
+
+      <div class="scenario">
+        <h3><span class="tag">СУМІЖНА 1</span>Закрити облік за день одразу</h3>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    A["Полотно днів"] --> B["Вигляд «Календар»"]
+    B --> C{"Є проєкт для дня?"}
+    C -->|ні| D["Додати проєкт"]
+    D --> B
+    C -->|так| E{"День видно в сітці?"}
+    E -->|ні| F["Приховування вихідних"]
+    F --> F1{"Здогадалася про прапорець?"}
+    F1 -->|так| B
+    F1 -->|ні| Z1["ГЛУХИЙ КУТ: працювала в суботу, відмітити нікуди"]
+    E -->|так| G["Вибір проєкту для дня — поповер"]
+    G --> H{"Один проєкт на день?"}
+    H -->|ні| Z2["ГЛУХИЙ КУТ: клітинка вміщає один проєкт, день поділений між двома"]
+    H -->|так| I["Підсумок місяця"]
+    I --> S1["УСПІХ: день закрито, підсумок оновився сам"]
+    classDef ok stroke:#8ab5a8,stroke-width:2px;
+    classDef bad stroke:#c8845c,stroke-width:2px;
+    class S1 ok;
+    class Z1,Z2 bad;
+</pre>
+        </div>
+        <p class="recap">
+          Найкоротший сценарій продукту — і саме тому найважливіший: два кліки, і підсумок
+          перерахувався сам. Обидва глухі кути не вигадані. Перший: приховування вихідних ховає
+          клітинки суботи й неділі — працювала у вихідний, клікнути нікуди, і продукт не підказує чому.
+          Другий: поділений день між двома проєктами — рівно та межа календаря, яку ресерч назвав
+          умовою поломки. Рішення про неї свідомо відкладене до розмов із людьми.
+        </p>
+      </div>
+
+      <div class="scenario">
+        <h3><span class="tag">СУМІЖНА 3</span>Відрізняти чужі гроші від своїх</h3>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    A["Підсумок місяця"] --> B{"Податок і комісія задані?"}
+    B -->|так| G["Валюта і курс"]
+    B -->|ні| C["Секція податку й комісії"]
+    C --> D{"Знає свій відсоток?"}
+    D -->|ні| Z1["ГЛУХИЙ КУТ: продукт не підказує ставку податку"]
+    D -->|так| E["Секція податку й комісії — введено"]
+    E --> G
+    G --> H{"Валюта є серед трьох?"}
+    H -->|ні| Z2["ГЛУХИЙ КУТ: заробляє в USD або GBP, показати нічим"]
+    H -->|так| I{"Курс свіжий?"}
+    I -->|ні| J["Застарілий курс — беззвучний фолбек"]
+    I -->|так| K["Підсумок місяця — чистими"]
+    J --> K
+    K --> S1["УСПІХ: бачить свої гроші окремо від чужих"]
+    classDef ok stroke:#8ab5a8,stroke-width:2px;
+    classDef bad stroke:#c8845c,stroke-width:2px;
+    classDef wait stroke:#8b909b,stroke-width:2px;
+    class S1 ok;
+    class Z1,Z2 bad;
+    class J wait;
+</pre>
+        </div>
+        <p class="recap">
+          Задача ядра — і водночас та, де продукт найбільше залежить від знань людини.
+          Ми питаємо відсоток податку, але нічим не допомагаємо його дізнатись. Другий глухий кут —
+          три валюти: для фрилансера, що працює зі США чи Британією, продукт просто не має чим
+          показати результат, і дізнається він про це вже після введення всіх даних.
+        </p>
+      </div>
+
+      <div class="scenario">
+        <h3><span class="tag">СУМІЖНА 4</span>Повернутись після пропуску</h3>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    A["Завантаження — LOADING…"] --> B{"Дані на місці?"}
+    B -->|ні| C["Порожній стан"]
+    C --> Z1["ГЛУХИЙ КУТ: продукт не відрізняє «перший раз» від «усе зникло»"]
+    B -->|так| D["Смуга місяця"]
+    D --> E["Полотно днів — минулий місяць"]
+    E --> F{"Прогалини видно?"}
+    F -->|так| G{"Людина пам'ятає, що було в ті дні?"}
+    F -->|ні| H["Вигляд «Список»"]
+    H --> G
+    G -->|ні| Z2["ГЛУХИЙ КУТ: порожнеча видима, але нічим не підказана"]
+    G -->|так| I["Вибір проєкту для дня — поповер"]
+    I --> J["Підсумок місяця"]
+    J --> S1["УСПІХ: місяць відновлено, повертатися не страшно"]
+    classDef ok stroke:#8ab5a8,stroke-width:2px;
+    classDef bad stroke:#c8845c,stroke-width:2px;
+    class S1 ok;
+    class Z1,Z2 bad;
+</pre>
+        </div>
+        <p class="recap">
+          Тут головна сила продукту й головна вразливість стоять поруч. Сила: календар
+          <b>показує прогалину</b> — незафарбований вівторок сам нагадує про себе, чого таймерні
+          продукти не вміють у принципі. Вразливість подвійна. Дані живуть у localStorage, тому інший
+          браузер або очищена історія дають порожній екран — і продукт не може відрізнити новачка
+          від людини, яка щойно втратила рік роботи. І друге: календар показує, що день порожній,
+          але не підказує, що там <b>було</b>.
+        </p>
+      </div>
+
+      <p class="note">
+        <b>Сценарій Суміжної 2 навмисно не намальований.</b> Він упирається в екран «Рахунок»,
+        якого не існує. Схема з незбудованим фіналом видавала б намір за продукт.
+      </p>
+    </section>
+
+  </main>
+
+  <footer class="colophon">
+    <p>prodrec — продукт. Зібрано з <b>people/personas.md</b> і <b>product/structure.md</b>, 8 серпня 2026. Ресерч під ними — <b>research/research.md</b> і <b>research/research.html</b>.</p>
+    <p>Схеми малює mermaid.js із CDN — на відміну від <b>research.html</b>, ця сторінка потребує інтернету. Без нього діаграми покажуться як вихідний текст, решта сторінки працює.</p>
+  </footer>
+
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "base",
+    darkMode: true,
+    securityLevel: "strict",
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    themeVariables: {
+      background:          "#15171b",
+      primaryColor:        "#1b1e23",
+      primaryTextColor:    "#e9eaee",
+      primaryBorderColor:  "#3a4048",
+      secondaryColor:      "#1b1e23",
+      tertiaryColor:       "#15171b",
+      lineColor:           "#8b909b",
+      textColor:           "#e9eaee",
+      nodeBorder:          "#3a4048",
+      mainBkg:             "#1b1e23",
+      edgeLabelBackground: "#15171b",
+      fontSize:            "13px"
+    },
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis", padding: 14 }
+  });
+</script>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('#nav a'));
+    var sections = links
+      .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+      .filter(Boolean);
+    if (!sections.length) return;
+
+    function setActive(id) {
+      links.forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+      });
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+      var visible = entries
+        .filter(function (e) { return e.isIntersecting; })
+        .sort(function (a, b) { return a.boundingClientRect.top - b.boundingClientRect.top; });
+      if (visible.length) setActive(visible[0].target.id);
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+
+    sections.forEach(function (s) { observer.observe(s); });
+    setActive(sections[0].id);
+  })();
+</script>
+</body>
+</html>
