@@ -345,6 +345,18 @@
   figcaption b { color: var(--fg-2); font-weight: 600; }
   .locked { color: var(--warn); }
 
+  /* ---------- референси Harvest ---------- */
+
+  .refs { display: grid; grid-template-columns: repeat(auto-fill, minmax(304px, 1fr)); gap: 32px 22px; }
+  figure.ref img { aspect-ratio: 768 / 523; object-position: center top; }
+  figcaption .take {
+    display: block;
+    margin-top: 8px;
+    padding-left: 12px;
+    border-left: 1px solid var(--accent);
+    color: var(--fg-2);
+  }
+
   /* ---------- підвал ---------- */
 
   footer.colophon {
@@ -418,8 +430,8 @@
       <span>Зібрано <b>7–8 серпня 2026</b></span>
       <span><b>9</b> продуктів</span>
       <span><b>5</b> у порівнянні по осях</span>
-      <span><b>10</b> скрінів, 1440×900</span>
-      <span>Скріни зняті особисто</span>
+      <span><b>10</b> своїх скрінів, 1440×900</span>
+      <span><b>9</b> екранів Harvest із Mobbin</span>
     </div>
   </header>
 
@@ -428,6 +440,7 @@
       <a href="#competitors">Конкуренти</a>
       <a href="#benchmark">Бенчмарк</a>
       <a href="#patterns">Патерни</a>
+      <a href="#harvest">Harvest зблизька</a>
       <a href="#findings">Висновки</a>
       <a href="#screens">Скріни</a>
     </nav>
@@ -680,6 +693,116 @@
         </table>
       </div>
       <p class="note"><b>Вибір для prodrec:</b> календар-полотно як основа, timesheet-матриця третім виглядом тих самих даних — за умови, що поділений день стане нормою. Таймер відпадає: одиниця не та, вимагає присутності в момент роботи і не ремонтується, коли його забули.</p>
+    </section>
+
+    <!-- ===================== HARVEST ===================== -->
+    <section id="harvest">
+      <h2>Harvest зблизька</h2>
+      <p class="sec-lede">
+        Дев'ять екранів продукту, який у бенчмарку єдиний доводить трекінг до суми.
+        Дивимось не на вигляд, а на ціну вводу і на те, де в них закінчується відповідь
+        на питання «скільки моє».
+      </p>
+
+      <h3><span class="tag">ВВІД</span>Як заносять роботу</h3>
+      <div class="refs">
+        <figure class="ref">
+          <a href="https://mobbin.com/screens/658db683-c3db-426d-baf6-d1382c054da3" target="_blank" rel="noreferrer noopener">
+            <img src="screens/harvest/01-day-timesheet.webp" alt="Harvest: денний таймшит зі списком записів і кнопками Start"></a>
+          <figcaption>
+            <b>День у таймшиті</b> — п'ять записів за 18 травня, у кожного своя кнопка Start і сума знизу.
+            <span class="take">Один день розсипано на п'ять рядків. prodrec ставить один запис на день — саме тут різниця в ціні вводу.</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ref">
+          <a href="https://mobbin.com/screens/515c12d2-09ed-4be0-bb4f-d33ebc0bacdc" target="_blank" rel="noreferrer noopener">
+            <img src="screens/harvest/02-timer-running.webp" alt="Harvest: запущений таймер із кнопкою Stop і підказкою про час старту"></a>
+          <figcaption>
+            <b>Таймер у роботі</b> — кнопка Stop, банер «Timer started» і підказка «запущено о 14:04, минула 1:00».
+            <span class="take">Стан таймера доводиться пояснювати текстом, бо його не видно. Це та сама крихкість, через яку таймер відхилено в ux-patterns.md.</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ref">
+          <a href="https://mobbin.com/screens/1ca6c281-d3f3-4d8d-aff3-e3b296a88276" target="_blank" rel="noreferrer noopener">
+            <img src="screens/harvest/03-new-entry.webp" alt="Harvest: модалка нової позиції часу з полями проєкт, задача, нотатка"></a>
+          <figcaption>
+            <b>Нова позиція часу</b> — клієнт і проєкт, задача, нотатка, час. Внизу «Start timer» і «Pull in a calendar event».
+            <span class="take">Чотири поля, щоб записати роботу. Ось у чому вимірюється ціна запису — у prodrec вона має бути один тап по клітинці.</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ref">
+          <a href="https://mobbin.com/screens/40d64491-c02f-4cb3-bd42-d56bcdfc684c" target="_blank" rel="noreferrer noopener">
+            <img src="screens/harvest/04-week-matrix.webp" alt="Harvest: тижнева матриця, рядки проєкти, колонки дні"></a>
+          <figcaption>
+            <b>Тиждень матрицею</b> — рядки проєкти, колонки дні, суми по обох осях, автозбереження з написом «Saving…».
+            <span class="take">Патерн 3 живцем. Для соло з одним-трьома проєктами сітка стоїть майже порожня — тому в prodrec це третій вигляд, а не основа.</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ref">
+          <a href="https://mobbin.com/screens/56d75373-1520-4a96-93d5-d4d4b24cd29c" target="_blank" rel="noreferrer noopener">
+            <img src="screens/harvest/05-week-empty.webp" alt="Harvest: порожній стан тижневого вигляду з ілюстрацією"></a>
+          <figcaption>
+            <b>Порожній тиждень</b> — ілюстрація і рядок «це тижневий вигляд, зручний, щоб швидко ввести багато часу за раз».
+            <span class="take">Порожнеча не соромиться себе — вона пояснює, для чого цей екран. Ось як має поводитись перший день у prodrec.</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <h3><span class="tag">ГРОШІ</span>Де час стає сумою</h3>
+      <div class="refs">
+        <figure class="ref">
+          <a href="https://mobbin.com/screens/f86b014a-8836-4eaa-94b7-ab4ac2cb718c" target="_blank" rel="noreferrer noopener">
+            <img src="screens/harvest/06-project-budget.webp" alt="Harvest: картка проєкту з бюджетом, залишком і невиставленою сумою"></a>
+          <figcaption>
+            <b>Картка проєкту</b> — графік прогресу і чотири числа в ряд: години, залишок бюджету 32%, внутрішні витрати, невиставлено <span class="num">$3 432.75</span>.
+            <span class="take">Чотири числа — і жодне не відповідає «скільки з цього моє». Ось де відкривається місце для prodrec.</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ref">
+          <a href="https://mobbin.com/screens/778140b7-e2a4-414c-a836-242ec5e11e6e" target="_blank" rel="noreferrer noopener">
+            <img src="screens/harvest/07-report-money.webp" alt="Harvest: тижневий звіт із часткою білабельних годин і сумою"></a>
+          <figcaption>
+            <b>Звіт: години → гроші</b> — за тиждень <span class="num">31.31</span> год, кільце «78% білабельних», сума <span class="num">$850.85</span>.
+            <span class="take">Той самий перехід «час → сума», по який ми і йшли до Harvest. Але сума брудна: до податку й комісії. Далі вони не ведуть.</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ref">
+          <a href="https://mobbin.com/screens/d9d1a7fc-8c80-4575-a6b9-32658698e377" target="_blank" rel="noreferrer noopener">
+            <img src="screens/harvest/08-uninvoiced.webp" alt="Harvest: звіт невиставлених сум за місяць по клієнтах"></a>
+          <figcaption>
+            <b>Невиставлене за місяць</b> — <span class="num">$2 464.23</span> разом, розкладено по клієнтах, у кожного кнопка Invoice.
+            <span class="take">Найближче з усього до питання «як мій місяць». Але це звіт, у який треба зайти — стан не живе на головному екрані.</span>
+          </figcaption>
+        </figure>
+
+        <figure class="ref">
+          <a href="https://mobbin.com/screens/0c390c8d-1fb4-43a6-9b4e-a3f0bacb4686" target="_blank" rel="noreferrer noopener">
+            <img src="screens/harvest/09-project-rate.webp" alt="Harvest: налаштування проєкту зі ставкою за годину і бюджетом"></a>
+          <figcaption>
+            <b>Ставка й бюджет</b> — тип проєкту, білабельна ставка <span class="num">$14.00</span>/год, бюджет, алерт при перевищенні 80%.
+            <span class="take">Скільки налаштувань доводиться просити, коли одиниця — година. Денна ставка для соло — це одне поле.</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <p class="note">
+        <b>Про таймер окремо:</b> він тут на екранах 2 і 3. Рішення з <b>ux-patterns.md</b> не переглядаю —
+        просто кладу поруч, щоб було видно, від чого саме відмовляємось: від старту-стопу, від
+        крихкого стану «йде» і від хвилин, які все одно округляться до дня.
+      </p>
+      <p class="note">
+        Скріни — <b>Mobbin</b>, застосунок Harvest (web), зібрані через Mobbin MCP.
+        Клік на картинку відкриває оригінальний екран на Mobbin.
+        Копії лежать локально в <b>screens/harvest/</b>, щоб сторінка працювала без інтернету — але це чужий
+        матеріал, а <b>research/</b> віддається публічно з GitHub Pages. Перед публікацією їх варто прибрати
+        або лишити самі посилання.
+      </p>
     </section>
 
     <!-- ===================== ВИСНОВКИ ===================== -->
