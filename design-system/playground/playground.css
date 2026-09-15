@@ -145,6 +145,8 @@ body {
 /* ───── Topbar (narrow screens) ───── */
 
 .pg-topbar { display: none; }
+/* Scrim exists only for the mobile drawer; on desktop it must not become a grid cell. */
+.pg-scrim { display: none; }
 
 /* ───── Main ───── */
 
@@ -655,6 +657,7 @@ body {
   }
   .pg-app.is-nav-open .pg-sidebar { translate: 0 0; }
   .pg-scrim {
+    display: block;
     position: fixed;
     inset: 0;
     z-index: 50;
