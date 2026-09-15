@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>prodrec · Design System</title>
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="components.css">
+  <link rel="stylesheet" href="playground/playground.css">
+</head>
+<body>
+  <div class="pg-app" id="pg-app">
+    <header class="pg-topbar">
+      <button class="ds-icon-btn" data-type="secondary" data-variant="link" data-size="md" type="button" aria-label="Відкрити навігацію" aria-controls="pg-sidebar" aria-expanded="false" id="pg-menu"><span class="ds-icon" data-icon="editor-menu--cute-light" aria-hidden="true"></span></button>
+      <span class="pg-brand__name">prodrec DS</span>
+      <span style="inline-size:34px"></span>
+    </header>
+
+    <aside class="pg-sidebar" id="pg-sidebar" aria-label="Розділи дизайн-системи">
+      <div class="pg-brand">
+        <span class="pg-brand__mark" aria-hidden="true">p</span>
+        <div>
+          <div class="pg-brand__name">prodrec Design System</div>
+          <div class="pg-brand__meta">Playground · Figma → код</div>
+        </div>
+      </div>
+      <div class="pg-search" id="pg-search"></div>
+      <nav class="pg-nav" id="pg-nav"></nav>
+      <div class="pg-sidebar__foot" id="pg-foot"></div>
+    </aside>
+    <div class="pg-scrim" id="pg-scrim"></div>
+
+    <main class="pg-main" id="pg-main" tabindex="-1">
+      <div class="pg-page" id="pg-page" aria-live="polite"></div>
+    </main>
+  </div>
+  <div class="pg-copied" id="pg-copied" role="status" aria-live="polite"></div>
+
+  <script src="icons.js"></script>
+  <script src="components.js"></script>
+  <script src="markup.js"></script>
+  <script src="playground/tokens-data.js"></script>
+  <script src="playground/icons-data.js"></script>
+  <script src="playground/flags-data.js"></script>
+  <script src="playground/app.js"></script>
+  <script src="playground/pages-foundations.js"></script>
+  <script src="playground/pages-components.js"></script>
+  <script src="playground/pages-components-2.js"></script>
+</body>
+</html>
