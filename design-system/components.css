@@ -650,9 +650,12 @@
   -webkit-tap-highlight-color: transparent;
   transition: opacity var(--duration-quick) var(--ease-smooth-out);
 }
+/* Figma 260:2764 (md only). Thumb is flat bg-card with no shadow in every state:
+   18px at rest (3px in from the left, 3px in from the right when checked, so it travels 18px),
+   16px in Hover / Focus / Disable. */
 .ds-switch__track {
   --sw-bg: var(--bg-secondary);
-  --toggle-travel: 19px;
+  --toggle-travel: 18px;
   position: relative;
   flex: none;
   inline-size: 42px;
@@ -672,12 +675,9 @@
   block-size: 18px;
   border-radius: var(--rounded-full);
   background: var(--bg-card);
-  box-shadow: var(--effect-inner-bevel);
   translate: 0 0;
   will-change: translate;
-  transition:
-    scale var(--duration-quick) var(--ease-smooth-out),
-    box-shadow var(--duration-quick) var(--ease-smooth-out);
+  transition: scale var(--duration-quick) var(--ease-smooth-out);
 }
 .ds-switch__input:checked ~ .ds-switch__track { --sw-bg: var(--bg-primary); }
 .ds-switch__input:checked ~ .ds-switch__track .ds-switch__thumb { translate: var(--toggle-travel) 0; }
@@ -701,13 +701,12 @@
 }
 .ds-switch:is(:hover, [data-force~="hover"]):not(:has(.ds-switch__input:disabled)) .ds-switch__track { --sw-bg: var(--bg-secondary-80); }
 .ds-switch:is(:hover, [data-force~="hover"]):not(:has(.ds-switch__input:disabled)) .ds-switch__input:checked ~ .ds-switch__track { --sw-bg: var(--bg-primary-80); }
-.ds-switch:is(:hover, :has(.ds-switch__input:focus-visible), [data-force~="hover"], [data-force~="focus"]) .ds-switch__thumb {
-  scale: 0.889;
-  box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent;
-}
-.ds-switch:is(:active, [data-force~="active"]) .ds-switch__thumb { scale: 0.8; }
+.ds-switch:is(:hover, :has(.ds-switch__input:focus-visible), :has(.ds-switch__input:disabled), [data-force~="hover"], [data-force~="focus"], [data-force~="disabled"]) .ds-switch__thumb { scale: 0.889; }
+.ds-switch:is(:active, [data-force~="active"]):not(:has(.ds-switch__input:disabled)) .ds-switch__thumb { scale: 0.8; }
 .ds-switch:is(:has(.ds-switch__input:focus-visible), [data-force~="focus"]) .ds-switch__track { box-shadow: var(--effect-focus-ring); }
 .ds-switch:is(:has(.ds-switch__input:disabled), [data-force~="disabled"]) { opacity: 0.5; cursor: not-allowed; }
+/* Figma text/text-muted is #c8cbce, the same value as --text-disabled. */
+.ds-switch:is(:has(.ds-switch__input:disabled), [data-force~="disabled"]) .ds-switch__label { color: var(--text-disabled); }
 
 /* ───────────────────────── Checkbox Cards ───────────────────────── */
 
