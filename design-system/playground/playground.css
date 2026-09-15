@@ -50,17 +50,15 @@ body {
   gap: var(--spacing-s);
   padding: var(--spacing-xl) var(--spacing-xl) var(--spacing-md);
 }
+/* Raster of «ProdRec logo.svg»: the Figma scatter-brush export is 5.4 MB, the PNG is 24 KB. */
 .pg-brand__mark {
-  display: grid;
-  place-items: center;
+  display: block;
+  flex: none;
   inline-size: 36px;
   block-size: 36px;
-  border-radius: var(--rounded-2xl);
-  background: var(--bg-primary);
-  color: var(--text-on-fill);
-  box-shadow: var(--effect-inner-bevel);
-  font: var(--ts-headline-h6-bold);
 }
+.pg-topbar__brand { display: flex; align-items: center; gap: var(--spacing-xs); }
+.pg-topbar .pg-brand__mark { inline-size: 28px; block-size: 28px; }
 .pg-brand__name { font: var(--ts-headline-h6-bold); }
 .pg-brand__meta { color: var(--text-tertiary); font: var(--ts-body-sm-regular); }
 
