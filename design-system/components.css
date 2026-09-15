@@ -1302,7 +1302,7 @@
   --icon-size: 14px;
   transition: color var(--duration-quick) var(--ease-smooth-out);
 }
-.ds-field__tip { color: var(--text-disabled); cursor: help; }
+.ds-field__tip { display: flex; flex: none; color: var(--text-disabled); cursor: help; }
 .ds-field__control {
   position: relative;
   display: flex;
@@ -1325,7 +1325,10 @@
     background-color var(--duration-quick) var(--ease-smooth-out);
   will-change: transform;
 }
+/* Flex, not a line box: an inline icon sits on the text baseline and lands 2–3px above centre. */
 .ds-field__lead {
+  display: flex;
+  flex: none;
   --icon-size: var(--f-lead);
   color: var(--f-icon);
   transition: color var(--duration-quick) var(--ease-smooth-out);
