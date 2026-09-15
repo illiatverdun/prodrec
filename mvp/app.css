@@ -1,0 +1,497 @@
+/* prod.rec MVP · Calendar page · Empty state
+   Figma ZEFAWPi4a1vPyRZ0Mmh5Hi, frame 93:1203 (1440). Desktop only (D-009).
+   Needs: design-system/tokens.css, components.css, prototypes/calendar-icon/calendar-icon.css. */
+
+:root {
+  /* Figma variables that design-system/tokens.css does not have yet. */
+  --text-secondary-foreground: #626465;
+  --text-muted-foreground: rgba(128, 130, 132, 0.8);
+  --text-muted: rgba(205, 206, 207, 0.8);
+
+  --shadow-card:
+    0 15px 33px rgba(227, 227, 227, 0.1),
+    0 60px 60px rgba(227, 227, 227, 0.09),
+    0 134px 80px rgba(227, 227, 227, 0.05),
+    0 238px 95px rgba(227, 227, 227, 0.01);
+
+  /* Gentle motion: the shared transitions.dev scale, a touch slower and without overshoot. */
+  --air-dur: 480ms;
+  --air-ease: var(--ease-smooth-out);
+  --digit-dur: 460ms;
+  --digit-distance: 6px;
+  --digit-ease: var(--ease-smooth-out);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg-background);
+  color: var(--text-primary);
+  font: var(--ts-body-md-regular);
+  -webkit-font-smoothing: antialiased;
+}
+
+.ds-icon > img { display: block; inline-size: 100%; block-size: 100%; }
+.onb .ds-btn, .pop .ds-btn { font: var(--ts-body-md-semibold); }
+
+.page { display: flex; flex-direction: column; min-block-size: 100vh; }
+
+/* ───── Header ───── */
+
+.hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  block-size: 56px;
+  padding: 8px 12px 8px 8px;
+  background: var(--bg-card-20);
+}
+.logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.logo__mark { display: block; inline-size: 40px; block-size: 40px; }
+.logo__word { font: var(--ts-headline-h6-semibold); color: var(--color-pink-600); }
+
+/* ───── Layout ───── */
+
+.main { display: flex; justify-content: center; padding-block-start: 16px; }
+.board { display: flex; align-items: flex-start; gap: 12px; }
+
+.card {
+  position: relative;
+  border: 1px solid var(--border-default-60);
+  border-radius: 32px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
+}
+.card__title { display: flex; align-items: center; justify-content: space-between; padding-inline-start: 4px; }
+.card__title h2 { flex: 1; margin: 0; font: var(--ts-body-lg-medium); color: var(--text-primary); }
+
+/* ───── Calendar ───── */
+
+.cal { inline-size: 582px; padding: 24px; overflow: hidden; }
+
+.cal-head { display: flex; align-items: center; gap: 24px; block-size: 60px; }
+.cal-head__lead { display: flex; flex: 1; align-items: center; gap: 16px; min-inline-size: 0; }
+.cal-head__actions { display: flex; align-items: center; gap: 12px; }
+.cal-nav { display: flex; align-items: center; gap: 8px; }
+
+.cal-title { display: flex; flex: 1; flex-direction: column; gap: 6px; min-inline-size: 0; }
+.cal-title__month { margin: 0; font: var(--ts-headline-h5-regular); color: var(--text-primary); }
+.cal-title__meta { margin: 0; font: var(--ts-body-sm-regular); color: var(--text-secondary-foreground); }
+.cal-title__days { color: var(--text-primary); }
+
+/* Figma variant of the icon: band text secondary-foreground, day number as a gradient. */
+.cal-icon {
+  --muted-foreground: var(--text-secondary-foreground);
+  --foreground: var(--text-primary);
+  --background: var(--bg-background);
+  --border: var(--border-default-60);
+}
+.cal-icon[data-current="true"] .cal-day .t-digit {
+  background: linear-gradient(135deg, var(--text-secondary-foreground), var(--text-primary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.days { display: flex; flex-direction: column; gap: 12px; margin-block-start: 20px; }
+.days__head { display: flex; justify-content: space-between; }
+.days__head span { inline-size: 100px; text-align: center; font: var(--ts-body-sm-regular); color: var(--text-muted-foreground); }
+
+.days__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 100px);
+  gap: 8px;
+  transition:
+    opacity var(--air-dur) var(--air-ease),
+    translate var(--air-dur) var(--air-ease),
+    filter var(--air-dur) var(--air-ease);
+}
+.days__grid.is-exit {
+  opacity: 0;
+  translate: calc(var(--dir, 1) * -8px) 0;
+  filter: blur(2px);
+  transition-duration: 160ms;
+  transition-timing-function: ease-in;
+}
+.days__grid.is-enter-start { opacity: 0; translate: calc(var(--dir, 1) * 8px) 0; filter: blur(2px); transition: none; }
+
+/* Calendar item · Figma 113:8701. Figma strokes sit inside, so padding shrinks by the stroke. */
+.day {
+  block-size: 100px;
+  padding: 3px;
+  border: 1px solid var(--border-default-60);
+  border-radius: 24px;
+  background: var(--bg-secondary-10);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--duration-fast) var(--air-ease),
+    opacity var(--duration-fast) var(--air-ease);
+}
+.day__card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  block-size: 100%;
+  padding: 12px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  box-shadow: var(--effect-popover-shadow-soft);
+  transition: background-color var(--duration-fast) var(--air-ease);
+}
+.day__num { font: var(--ts-body-lg-medium); color: var(--text-secondary); }
+
+.day[data-other] { opacity: 0.3; cursor: default; }
+.day[data-today] { padding: 2px; border: 2px solid var(--border-accent); }
+.day[data-today] .day__num { font: var(--ts-body-lg-semibold); color: var(--text-accent); }
+.day[data-today] .day__card {
+  background: repeating-linear-gradient(135deg, var(--color-pink-50) 0 4.5px, var(--bg-card) 4.5px 9px);
+}
+
+.day:not([data-other]):hover,
+.day[data-range] { background: var(--bg-secondary-20); }
+.day:not([data-other], [data-today]):hover .day__card,
+.day[data-range]:not([data-today]) .day__card { background: var(--bg-card-80); }
+.day[data-today]:is(:hover, [data-range]) { background: var(--bg-secondary-10); }
+.day[data-today]:is(:hover, [data-range]) .day__card { background: var(--bg-card); }
+
+/* ───── Extra actions · Figma 18:5882 ───── */
+
+.extra {
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block-end: 0;
+  inline-size: 218px;
+  block-size: 153px;
+  pointer-events: none;
+}
+.extra__glow {
+  position: absolute;
+  left: 136px;
+  top: 41px;
+  inline-size: 228px;
+  block-size: 228px;
+  background: url("assets/glow.svg") center / 100% 100% no-repeat;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--air-dur) var(--air-ease);
+}
+.extra__blob {
+  position: absolute;
+  left: 169px;
+  top: 103px;
+  z-index: 1;
+  inline-size: 80px;
+  block-size: 80px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: translate var(--air-dur) var(--air-ease);
+}
+.extra__blob:focus-visible { outline: none; }
+.extra__blob:focus-visible .extra__blob-img { filter: drop-shadow(0 0 0 var(--color-pink-700)) drop-shadow(0 0 3px var(--color-pink-700)); }
+.extra__blob-img { position: absolute; inset: 4px 0 1px; inline-size: 80px; block-size: 75px; }
+.extra__icon {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  inline-size: 24px;
+  block-size: 24px;
+  transition:
+    translate var(--air-dur) var(--air-ease),
+    opacity var(--duration-fast) var(--ease-in-out),
+    filter var(--duration-fast) var(--ease-in-out),
+    rotate var(--air-dur) var(--air-ease);
+}
+.extra__icon[data-icon="close"] { opacity: 0; rotate: -90deg; filter: blur(2px); }
+
+.extra:hover .extra__glow,
+.extra[data-open="true"] .extra__glow { opacity: 1; }
+.extra:hover .extra__blob { translate: -27px -26px; }
+.extra[data-open="true"] .extra__blob { translate: -26px -25px; }
+.extra:is(:hover, [data-open="true"]) .extra__icon { translate: 7px 6px; }
+.extra[data-open="true"] .extra__icon[data-icon="add"] { opacity: 0; rotate: 90deg; filter: blur(2px); }
+.extra[data-open="true"] .extra__icon[data-icon="close"] { opacity: 1; rotate: 0deg; filter: blur(0); }
+
+.extra__point {
+  position: absolute;
+  left: 183px;
+  top: 120px;
+  z-index: 2;
+  inline-size: 40px;
+  block-size: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  opacity: 0;
+  scale: 0.8;
+  filter: blur(2px);
+  cursor: pointer;
+  transition:
+    translate var(--air-dur) var(--air-ease),
+    scale var(--air-dur) var(--air-ease),
+    opacity var(--duration-fast) var(--ease-in-out),
+    filter var(--duration-fast) var(--ease-in-out);
+}
+.extra[data-open="true"] .extra__point {
+  translate: var(--x) var(--y);
+  scale: 1;
+  opacity: 1;
+  filter: blur(0);
+  pointer-events: auto;
+  transition-delay: calc(var(--i) * var(--duration-stagger));
+}
+.extra__btn {
+  display: grid;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 12px;
+  background: var(--bg-secondary-20);
+  transition: background-color var(--duration-quick) var(--air-ease);
+}
+.extra__btn img { display: block; inline-size: 20px; block-size: 20px; }
+.extra__point:hover .extra__btn { background: var(--bg-secondary-50); }
+.extra__point:focus-visible { outline: none; }
+.extra__point:focus-visible .extra__btn { box-shadow: var(--effect-focus-ring); }
+.extra__tip {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 8px);
+  padding: 7px 11px;
+  border: 1px solid var(--border-muted);
+  border-radius: 12px;
+  background: var(--bg-card-80);
+  backdrop-filter: blur(32px);
+  color: var(--text-secondary);
+  font: var(--ts-body-md-regular);
+  white-space: nowrap;
+  opacity: 0;
+  translate: 4px -50%;
+  pointer-events: none;
+  transition: opacity var(--duration-quick) var(--ease-in-out), translate var(--duration-fast) var(--air-ease);
+}
+.extra__point:is(:hover, :focus-visible) .extra__tip { opacity: 1; translate: 0 -50%; }
+
+/* ───── Onboarding · Figma 93:1280 ───── */
+
+.side { display: flex; flex-direction: column; gap: 12px; inline-size: 360px; }
+.side .card { display: flex; flex-direction: column; padding: 16px; }
+.onb { gap: 16px; }
+.onb__points { display: flex; gap: 12px; }
+.onb__rail {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-block: 6px;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--bg-secondary-20);
+}
+.onb__rail i { display: block; inline-size: 6px; block-size: 6px; border-radius: 50%; background: var(--bg-secondary-80); }
+.onb__rail i[data-active] { background: var(--color-pink-600); }
+.onb__list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-muted-foreground);
+  font: var(--ts-body-md-regular);
+}
+.onb__list [data-active] { color: var(--text-accent); }
+.onb .ds-btn { inline-size: 100%; }
+
+/* ───── Billing · Figma 93:1287 ───── */
+
+.bill { block-size: 239px; gap: 12px; }
+
+.currency {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  block-size: 24px;
+  padding: 2px 2px 2px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-gray-100);
+  box-shadow: inset 0 0 0 1px var(--color-gray-300);
+  color: var(--color-gray-800);
+  font: var(--ts-body-sm-regular);
+  cursor: pointer;
+}
+.currency img { display: block; inline-size: 16px; block-size: 16px; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  block-size: 20px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--color-gray-100);
+  box-shadow: inset 0 0 0 1px var(--color-gray-300);
+  color: var(--color-gray-800);
+  font: var(--ts-body-sm-regular);
+  white-space: nowrap;
+}
+.chip[data-color="green"] {
+  background: var(--color-green-100);
+  box-shadow: inset 0 0 0 1px var(--color-green-300);
+  color: var(--color-green-800);
+}
+
+.receipt {
+  filter:
+    drop-shadow(0 3px 3px rgba(0, 0, 0, 0.03))
+    drop-shadow(0 11px 5.5px rgba(0, 0, 0, 0.03))
+    drop-shadow(0 25px 7.5px rgba(0, 0, 0, 0.02));
+}
+.receipt__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 12px 12px 0 0;
+  background: var(--bg-background);
+}
+.receipt__row { display: flex; align-items: center; justify-content: space-between; white-space: nowrap; }
+.receipt__row--net { padding-block-end: 4px; }
+.receipt__label { font: var(--ts-body-lg-medium); color: var(--text-primary); }
+.receipt__label[data-tone="muted"] { font: var(--ts-body-lg-regular); color: var(--text-secondary-foreground); }
+.receipt__label[data-tone="plain"] { font: var(--ts-body-lg-regular); }
+.receipt__total, .receipt__tax { display: flex; align-items: center; gap: 12px; }
+.receipt__amount { font: var(--ts-headline-h4-semibold); }
+.receipt__value { font: var(--ts-body-lg-regular); }
+.receipt__net { font: var(--ts-headline-h6-semibold); }
+.receipt__sep { display: block; inline-size: 100%; block-size: 1px; margin-block: -0.5px; }
+
+.barcode { display: flex; flex-direction: column; gap: 6px; opacity: 0.7; }
+.barcode__bars { display: flex; gap: 2px; block-size: 20px; opacity: 0.5; }
+.barcode__bars i { display: block; flex: none; block-size: 100%; background: var(--text-muted); }
+.barcode__note { margin: 0; color: var(--text-muted-foreground); font: var(--ts-body-sm-regular); text-align: center; }
+.receipt__edge { display: block; }
+.receipt__edge path { fill: var(--bg-background); }
+
+/* ───── Footer · Figma 263:9949 ───── */
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-block-start: auto;
+  padding-block: 110px 16px;
+  color: var(--text-tertiary);
+  font: var(--ts-body-sm-regular);
+}
+.foot__brand { display: flex; align-items: center; gap: 12px; }
+/* Figma draws the footer mark in grey. */
+.foot__brand img { display: block; inline-size: 24px; block-size: 24px; filter: grayscale(1); opacity: 0.7; }
+.foot u { text-underline-position: from-font; }
+
+/* ───── [?] Selection popover — not in Figma, DS tokens only ───── */
+
+.pop {
+  position: absolute;
+  z-index: 50;
+  display: grid;
+  gap: 12px;
+  inline-size: 264px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--bg-card);
+  box-shadow: inset 0 0 0 1px var(--border-default-60), var(--effect-popover-shadow-hard, var(--effect-popover-shadow-soft));
+  opacity: 0;
+  scale: var(--scale-medium, 0.97);
+  filter: blur(2px);
+  transform-origin: var(--origin, top left);
+  transition:
+    opacity var(--duration-quick) var(--ease-in-out),
+    scale var(--duration-quick) var(--air-ease),
+    filter var(--duration-quick) var(--ease-in-out);
+}
+.pop.is-open {
+  opacity: 1;
+  scale: 1;
+  filter: blur(0);
+  transition-duration: var(--duration-fast);
+}
+.pop__title { margin: 0; font: var(--ts-body-lg-medium); }
+.pop__text { margin: 0; color: var(--text-secondary); font: var(--ts-body-md-regular); }
+
+/* ───── Entrance ───── */
+
+@keyframes air-rise {
+  from { opacity: 0; translate: 0 8px; filter: blur(3px); }
+  to { opacity: 1; translate: 0 0; filter: blur(0); }
+}
+.hdr, .cal, .side > .card, .foot {
+  animation: air-rise 700ms var(--air-ease) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* ───── transitions.dev snippets, verbatim from prototypes/calendar-icon/transitions.css ───── */
+
+@keyframes t-digit-pop-in {
+  0%   {
+    transform: translate(
+      calc(var(--digit-distance) * var(--digit-dir-x)),
+      calc(var(--digit-distance) * var(--digit-dir-y))
+    );
+    opacity: 0;
+    filter: blur(var(--digit-blur));
+  }
+  100% { transform: translate(0, 0); opacity: 1; filter: blur(0); }
+}
+
+.t-digit-group {
+  display: inline-flex;
+  align-items: baseline;
+}
+.t-digit {
+  display: inline-block;
+  will-change: transform, opacity, filter;
+}
+.t-digit-group.is-animating .t-digit {
+  animation: t-digit-pop-in var(--digit-dur) var(--digit-ease) both;
+}
+.t-digit-group.is-animating .t-digit[data-stagger="1"] {
+  animation-delay: var(--digit-stagger);
+}
+.t-digit-group.is-animating .t-digit[data-stagger="2"] {
+  animation-delay: calc(var(--digit-stagger) * 2);
+}
+
+.t-text-swap {
+  display: inline-block;
+  transform: translateY(0);
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    transform var(--text-swap-dur) var(--text-swap-ease),
+    filter    var(--text-swap-dur) var(--text-swap-ease),
+    opacity   var(--text-swap-dur) var(--text-swap-ease);
+  will-change: transform, filter, opacity;
+}
+.t-text-swap.is-exit {
+  transform: translateY(calc(var(--text-swap-translate-y) * -1));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+}
+.t-text-swap.is-enter-start {
+  transform: translateY(var(--text-swap-translate-y));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>prod.rec</title>
+  <link rel="icon" type="image/png" href="../design-system/assets/images/prodrec-logo.png">
+  <link rel="stylesheet" href="../design-system/tokens.css">
+  <link rel="stylesheet" href="../design-system/components.css">
+  <link rel="stylesheet" href="../prototypes/calendar-icon/calendar-icon.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div class="page">
+    <!-- Header · Figma 277:34507 -->
+    <header class="hdr" style="--i:0">
+      <a class="logo" href="./">
+        <img class="logo__mark" src="../design-system/assets/images/prodrec-logo.png" alt="" width="40" height="40">
+        <span class="logo__word">prod.rec</span>
+      </a>
+      <!-- D-009: Google login skipped -->
+      <button class="ds-btn" data-type="secondary" data-variant="surface" data-size="md" type="button">
+        <span class="ds-icon"><img src="assets/google.svg" alt=""></span><span>Log in</span>
+      </button>
+    </header>
+
+    <main class="main">
+      <div class="board">
+        <!-- Calendar container · Figma 93:1210 -->
+        <section class="card cal" aria-label="Calendar" style="--i:1">
+          <div class="cal-head">
+            <div class="cal-head__lead">
+              <!-- Animated calendar icon · prototypes/calendar-icon (D-008) -->
+              <div class="cal-icon" id="cal-icon" data-current="true" data-dir="next" role="img" aria-label="">
+                <div class="cal-icon__card">
+                  <div class="cal-band"><span class="cal-band__text t-text-swap" id="cal-band" aria-hidden="true"></span></div>
+                </div>
+                <div class="cal-page">
+                  <svg class="cal-shape" viewBox="0 0 60 26" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" aria-hidden="true">
+                    <path d="M6,0 L0,17 L0,20 A6,6 0 0 0 6,26 Z"/>
+                    <rect x="5.5" y="0" width="49" height="26"/>
+                    <path d="M54,0 L60,17 L60,20 A6,6 0 0 1 54,26 Z"/>
+                  </svg>
+                  <div class="cal-numbers"><span class="cal-day t-digit-group" id="cal-day" aria-hidden="true"></span></div>
+                </div>
+              </div>
+              <div class="cal-title">
+                <h1 class="cal-title__month"><span class="t-text-swap" id="month-name"></span></h1>
+                <p class="cal-title__meta"><span class="cal-title__days"><span class="t-digit-group" id="meta-logged"></span> / <span class="t-digit-group" id="meta-workdays"></span> d.</span> · <span class="t-digit-group" id="meta-hours"></span> h.</p>
+              </div>
+            </div>
+            <div class="cal-head__actions">
+              <div class="cal-nav">
+                <button class="ds-icon-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="prev" aria-label="Previous month"><span class="ds-icon"><img src="assets/arrow-left.svg" alt=""></span></button>
+                <button class="ds-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="today"><span>Today</span></button>
+                <button class="ds-icon-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="next" aria-label="Next month"><span class="ds-icon"><img src="assets/arrow-right.svg" alt=""></span></button>
+              </div>
+              <!-- D-009: calendar menu skipped -->
+              <button class="ds-icon-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" aria-label="More"><span class="ds-icon"><img src="assets/more.svg" alt=""></span></button>
+            </div>
+          </div>
+
+          <div class="days">
+            <div class="days__head" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span></div>
+            <div class="days__grid" id="grid"></div>
+          </div>
+
+          <!-- Extra actions button · Figma 18:5882 (Normal / Hover / Press). D-009: actions skipped -->
+          <div class="extra" id="extra" data-open="false">
+            <span class="extra__glow" aria-hidden="true"></span>
+            <button class="extra__point" type="button" tabindex="-1" style="--i:0;--x:-21px;--y:-72px"><span class="extra__tip">Extra payments</span><span class="extra__btn"><img src="assets/currency-dollar.svg" alt=""></span></button>
+            <button class="extra__point" type="button" tabindex="-1" style="--i:1;--x:-60px;--y:-55px"><span class="extra__tip">Hours</span><span class="extra__btn"><img src="assets/time-duration.svg" alt=""></span></button>
+            <button class="extra__point" type="button" tabindex="-1" style="--i:2;--x:-70px;--y:-13px"><span class="extra__tip">Commission</span><span class="extra__btn"><img src="assets/bill-2.svg" alt=""></span></button>
+            <button class="extra__blob" type="button" id="extra-toggle" aria-expanded="false" aria-label="Extra actions">
+              <img class="extra__blob-img" src="assets/extra-blob.png" alt="">
+              <img class="extra__icon" data-icon="add" src="assets/add.svg" alt="">
+              <img class="extra__icon" data-icon="close" src="assets/close.svg" alt="">
+            </button>
+          </div>
+        </section>
+
+        <aside class="side">
+          <!-- Onboarding · Figma 93:1280 -->
+          <section class="card onb" aria-labelledby="onb-title" style="--i:2">
+            <div class="card__title"><h2 id="onb-title">Onboarding</h2></div>
+            <div class="onb__points">
+              <div class="onb__rail" aria-hidden="true"><i data-active></i><i></i><i></i></div>
+              <ol class="onb__list">
+                <li data-active aria-current="step">Set up your first project</li>
+                <li>Set up your taxes</li>
+                <li>Add a working day</li>
+              </ol>
+            </div>
+            <!-- D-009: "Create project" modal skipped -->
+            <button class="ds-btn" data-size="md" type="button"><span class="ds-icon"><img src="assets/add-circle.svg" alt=""></span><span>Set up project</span></button>
+          </section>
+
+          <!-- Billing · Figma 93:1287. Card ends where the code section starts; the receipt runs out of it. -->
+          <section class="card bill" aria-labelledby="bill-title" style="--i:3">
+            <div class="card__title">
+              <h2 id="bill-title">Billing</h2>
+              <!-- D-009: currency dropdown skipped -->
+              <button class="currency" type="button" aria-label="Currency: USD">USD<img src="assets/selector-vertical.svg" alt=""></button>
+            </div>
+            <div class="receipt">
+              <div class="receipt__body">
+                <div class="receipt__row">
+                  <span class="receipt__label">Total amount</span>
+                  <span class="receipt__total">
+                    <span class="chip" data-color="green"><span class="t-digit-group" id="bill-hours"></span>&nbsp;h.</span>
+                    <span class="receipt__amount">$&nbsp;<span class="t-digit-group" id="bill-total"></span></span>
+                  </span>
+                </div>
+                <img class="receipt__sep" src="assets/separator.svg" alt="">
+                <div class="receipt__row">
+                  <span class="receipt__label" data-tone="muted">Taxes</span>
+                  <span class="receipt__tax">
+                    <span class="chip"><span class="t-digit-group" id="bill-tax-rate"></span>%</span>
+                    <span class="receipt__value">-$<span class="t-digit-group" id="bill-tax"></span></span>
+                  </span>
+                </div>
+                <img class="receipt__sep" src="assets/separator.svg" alt="">
+                <div class="receipt__row receipt__row--net">
+                  <span class="receipt__label" data-tone="plain">Net profit</span>
+                  <span class="receipt__net">$&nbsp;<span class="t-digit-group" id="bill-net"></span></span>
+                </div>
+                <div class="barcode" aria-hidden="true">
+                  <div class="barcode__bars" id="barcode"></div>
+                  <!-- D-009: daily generated text skipped -->
+                  <p class="barcode__note">Grow up everyday!</p>
+                </div>
+              </div>
+              <svg class="receipt__edge" width="326" height="8.5" viewBox="0 0 326 8.5" aria-hidden="true">
+                <defs><pattern id="zigzag" width="16.971" height="8.5" x="10.26" patternUnits="userSpaceOnUse"><path d="M0 0H16.971L8.485 8.485Z"/></pattern></defs>
+                <rect width="326" height="8.5" fill="url(#zigzag)"/>
+              </svg>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <!-- Bottom section · Figma 263:9949. D-009: feedback form, Terms, Privacy skipped -->
+    <footer class="foot" style="--i:4">
+      <span class="foot__brand">
+        <img src="../design-system/assets/images/prodrec-logo.png" alt="" width="24" height="24">
+        <span>2026 Please send your feedback <u>here</u></span>
+      </span>
+      <span>Terms</span>
+      <span>Privacy</span>
+    </footer>
+  </div>
+
+  <!-- [?] Not in Figma: popover after press-and-drag while there are no projects. Built from DS tokens. -->
+  <div class="pop" id="pop" role="dialog" aria-labelledby="pop-title" hidden>
+    <p class="pop__title" id="pop-title"><span class="t-digit-group" id="pop-count"></span>&nbsp;<span id="pop-unit">days</span> selected</p>
+    <p class="pop__text">No projects yet. Set up your first project to log hours on these days.</p>
+    <button class="ds-btn" data-size="md" type="button"><span class="ds-icon"><img src="assets/add-circle.svg" alt=""></span><span>Set up project</span></button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
