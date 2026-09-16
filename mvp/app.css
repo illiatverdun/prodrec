@@ -1078,17 +1078,18 @@ body {
   box-shadow: inset 0 0 0 1px var(--border-default-60), var(--effect-popover-shadow-soft);
 }
 .hpop__list { display: flex; flex-direction: column; gap: 4px; }
+/* Figma 29:6726 (updated 2026-09-16): sm buttons, no stepper border, centred value. */
 .hrow {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   padding: 4px;
   border-radius: 16px;
   background: transparent;
   transition: background-color var(--duration-fast) var(--ease-smooth-out);
 }
-.hrow[data-selected] { background: var(--bg-secondary-20); } /* annotation 292:113466: selected project */
-.hrow__name { display: flex; flex: 1; align-items: center; gap: 8px; min-inline-size: 0; padding: 8px 12px 8px 8px; }
+.hrow[data-selected] { gap: 4px; background: var(--bg-secondary-20); } /* annotation 292:113466: selected project */
+.hrow__name { display: flex; flex: 1; align-items: center; gap: 8px; min-inline-size: 0; padding: 6px 12px 6px 6px; }
 .hrow__avatar { flex: none; inline-size: 24px; block-size: 24px; border: 1px solid var(--border-subtle-20); border-radius: 8px; object-fit: cover; }
 .hrow__label {
   flex: 1;
@@ -1103,20 +1104,16 @@ body {
   display: flex;
   flex: none;
   align-items: center;
+  gap: 8px;
   inline-size: 120px;
-  block-size: 40px;
-  padding: 4px 5px;
-  border-radius: 12px;
-  background: var(--bg-background);
-  box-shadow: inset 0 0 0 1px var(--border-default-60);
-  transition: box-shadow var(--duration-quick) var(--ease-smooth-out);
 }
-.hstep:focus-within { box-shadow: inset 0 0 0 1px var(--border-accent); }
+/* No border any more, so typing gets a soft fill instead of a stroke. */
+.hstep__value:focus-within { background: var(--bg-secondary-10); }
 .hstep .ds-icon-btn img { display: block; }
 .hstep .ds-icon-btn:disabled { opacity: 0.4; cursor: default; }
 .hstep .ds-icon-btn:not(:disabled):hover { --btn-bg: var(--bg-secondary-50); }
 .hstep .ds-icon-btn:not(:disabled):active { scale: var(--motion-scale-large); }
-.hstep__value { display: flex; flex: 1; align-items: baseline; justify-content: center; gap: 4px; min-inline-size: 0; color: var(--text-primary); font: var(--ts-body-lg-regular); cursor: text; }
+.hstep__value { display: flex; flex: 1; align-items: baseline; justify-content: center; gap: 4px; min-inline-size: 0; border-radius: 8px; color: var(--text-primary); font: var(--ts-body-lg-regular); cursor: text; transition: background-color var(--duration-quick) var(--ease-smooth-out); }
 .hstep__input {
   field-sizing: content;
   inline-size: 3ch;
@@ -1132,7 +1129,7 @@ body {
   caret-color: var(--text-accent);
 }
 .hstep__input.is-bump { --digit-distance: 4px; animation: t-digit-pop-in var(--digit-dur) var(--digit-ease) both; }
-.hrow__act { display: grid; place-items: center; }
+.hrow__act { display: grid; place-items: center; transition: background-color var(--duration-fast) var(--ease-smooth-out), scale var(--duration-quick) var(--ease-smooth-out); }
 .hrow__act img { display: block; }
 .hrow__act:not([data-type]):hover { --btn-bg: var(--bg-primary-80); }
 .hrow__act[data-type]:hover { --btn-bg: var(--bg-secondary-50); }

@@ -290,9 +290,9 @@
               <label class="hstep__value"><input class="hstep__input" type="text" inputmode="decimal" autocomplete="off"><span aria-hidden="true">h.</span></label>
               <button class="ds-icon-btn" data-type="secondary" type="button" data-step="1" aria-label="More hours"><img src="assets/arrow-right-14.svg" alt="" width="14" height="14"></button>
             </div>
-            <button class="ds-icon-btn hrow__act" data-size="lg" type="button">
-              <img class="t-icon" data-icon="add" src="assets/add-20-white.svg" alt="" width="20" height="20">
-              <img class="t-icon" data-icon="remove" src="assets/minimize.svg" alt="" width="20" height="20">
+            <button class="ds-icon-btn hrow__act" type="button">
+              <img class="t-icon" data-icon="add" src="assets/add-14-white.svg" alt="" width="14" height="14">
+              <img class="t-icon" data-icon="remove" src="assets/minimize-14.svg" alt="" width="14" height="14">
             </button>
           </div>`);
         row = hlist.lastElementChild;
