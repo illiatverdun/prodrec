@@ -546,7 +546,9 @@
   }
 
   // Annotation 35:995: on hover the hours swap to days in the month.
+  const collapsed = () => proj.hasAttribute("data-collapsible") && !proj.hasAttribute("data-open");
   projList.addEventListener("pointerover", (e) => {
+    if (collapsed()) return; // no row hover while collapsed: the rows sit under Show all
     const item = e.target.closest(".pitem:not([data-archived])");
     if (item && !item.contains(e.relatedTarget)) ui.swapText(item.querySelector(".pitem__stat"), item.dataset.days);
   });

@@ -807,6 +807,8 @@ body {
 }
 .pitem__edit img { flex: none; }
 .pitem:is(:hover, :focus-within) .pitem__edit { inline-size: 40px; margin-inline-start: 0; opacity: 1; }
+/* Collapsed section: no row hover, so reaching for Show all does not make the rows jump. Keyboard focus still reveals. */
+.proj[data-collapsible]:not([data-open]) .pitem:hover:not(:focus-within) .pitem__edit { inline-size: 0; margin-inline-start: -4px; opacity: 0; }
 .pitem__edit:hover { background: var(--bg-secondary-50); }
 .pitem__edit:active { scale: var(--motion-scale-large); }
 .pitem__edit:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
