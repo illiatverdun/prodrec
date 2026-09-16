@@ -55,7 +55,7 @@
                 <button class="ds-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="today"><span>Today</span></button>
                 <button class="ds-icon-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="next" aria-label="Next month"><span class="ds-icon"><img src="assets/arrow-right.svg" alt=""></span></button>
               </div>
-              <!-- Calendar menu · Figma 199:11366. Clear works with an undo toast; Copy previous month and the 7-day layout: D-009 -->
+              <!-- Calendar menu · Figma 199:11366. Clear works with an undo toast, Weekends switches to 7 days (292:91118); Copy previous month: D-009 -->
               <div class="menu" id="menu">
                 <button class="ds-icon-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="menu-toggle" aria-label="Calendar options" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-pop"><span class="ds-icon"><img src="assets/more.svg" alt=""></span></button>
                 <div class="ds-float ds-popover menu__pop" id="menu-pop" role="menu" aria-labelledby="menu-toggle">
@@ -76,7 +76,7 @@
           </div>
 
           <div class="days">
-            <div class="days__head" aria-hidden="true"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span></div>
+            <div class="days__head" aria-hidden="true"></div>
             <div class="days__grid" id="grid"></div>
           </div>
 

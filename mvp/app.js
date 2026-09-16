@@ -20,8 +20,10 @@
   const isCurrentMonth = (d) => d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
   const sym = () => store.currency(state.currency).symbol;
 
+  // Annotation I288:64844;93:1225: available days change with weekends, 5 → 7 days a week.
   function workdaysIn(d) {
     const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    if (state.weekends) return last;
     let n = 0;
     for (let i = 1; i <= last; i++) {
       const w = new Date(d.getFullYear(), d.getMonth(), i).getDay();
@@ -95,16 +97,18 @@
     const last = new Date(v.getFullYear(), v.getMonth() + 1, 0);
     const firstIdx = (first.getDay() + 6) % 7; // 0 = Monday
     const lastIdx = (last.getDay() + 6) % 7;
+    const week = state.weekends; // 7 days (Figma 292:91118) or Mon–Fri
     const start = new Date(first);
-    start.setDate(first.getDate() + (firstIdx > 4 ? 7 - firstIdx : -firstIdx));
-    const end = new Date(last);
-    end.setDate(last.getDate() + 4 - lastIdx);
+    start.setDate(first.getDate() + (!week && firstIdx > 4 ? 7 - firstIdx : -firstIdx));
+    // Annotation 113:8558: always 6 lines, so the card keeps its height from month to month.
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6 * 7 - (week ? 1 : 3));
 
     const next = new Map();
     const out = [];
     for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       const w = d.getDay();
-      if (w === 0 || w === 6) continue;
+      if (!week && (w === 0 || w === 6)) continue;
       const key = store.keyOf(d);
       const list = store.dayEntries(key).filter((e) => store.project(e.projectId));
       const before = shownDayProjects.get(key) || new Set();
@@ -395,6 +399,31 @@
   const closeMenu = () => setMenu(false);
   ui.floats.add(closeMenu);
 
+  /* Weekends on/off · Figma 292:91118. The whole week area (labels and days) swaps out and back in
+     with the same blur as a month change, then settles into 7 or 5 columns. */
+  const days = $(".days");
+  const LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  function applyWeek() {
+    days.dataset.week = state.weekends ? "7" : "5";
+    $(".days__head").innerHTML = LABELS.slice(0, state.weekends ? 7 : 5).map((l) => `<span>${l}</span>`).join("");
+    grid.innerHTML = cellsFor(view, false);
+    paintRange();
+  }
+  let weekTimer;
+  function swapWeek(animate) {
+    const parts = [$(".days__head"), grid];
+    clearTimeout(weekTimer);
+    clearTimeout(gridTimer);
+    if (!animate || ui.reduced.matches) { applyWeek(); return; }
+    parts.forEach((el) => { el.style.setProperty("--dir", "0"); el.classList.remove("is-enter-start"); el.classList.add("is-exit"); });
+    weekTimer = setTimeout(() => {
+      applyWeek();
+      parts.forEach((el) => { el.classList.remove("is-exit"); el.classList.add("is-enter-start"); });
+      void grid.offsetWidth;
+      parts.forEach((el) => el.classList.remove("is-enter-start"));
+    }, ui.cssMs("--duration-quick"));
+  }
+
   function renderWeekends() {
     weekendsSwitch.querySelector("input").checked = state.weekends;
     weekendsItem.setAttribute("aria-checked", String(state.weekends));
@@ -410,7 +439,6 @@
     if (item === weekendsItem) {
       weekendsSwitch.classList.add("is-init"); // toggle keyframes only after the first interaction
       store.set("weekends", !state.weekends);
-      // D-009: the grid stays Mon–Fri; the 7-day layout (Figma 292:93595) is not built yet.
       return;
     }
     if (item.dataset.action === "clear") {
@@ -734,6 +762,7 @@
   store.subscribe((reason) => {
     if (reason === "entries" || reason === "projects" || reason === "restore") refreshGrid();
     if (reason === "weekends" || reason === "restore") renderWeekends();
+    if (reason === "weekends") { closeDayPopovers(); swapWeek(true); }
     renderMeta(true);
     renderBilling(true);
     renderProjects(true);
@@ -751,6 +780,8 @@
     .map((t) => { const [l, w] = t.includes(":") ? t.split(":") : [0, t]; return `<i style="inline-size:${w}px;margin-inline-start:${l}px"></i>`; })
     .join("");
 
+  days.dataset.week = state.weekends ? "7" : "5";
+  $(".days__head").innerHTML = LABELS.slice(0, state.weekends ? 7 : 5).map((l) => `<span>${l}</span>`).join("");
   renderHeader(1, false);
   renderGrid(1, false);
   renderWeekends();
