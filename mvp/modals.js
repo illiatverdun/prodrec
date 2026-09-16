@@ -22,7 +22,8 @@
 
   /* ───── New / Edit project ───── */
 
-  function projectModal(projectId) {
+  /* opts.onSaved(project) runs after Create / Save closes the modal, e.g. to return to the mobile day drawer. */
+  function projectModal(projectId, opts = {}) {
     const editing = projectId ? store.project(projectId) : null;
     const draft = editing
       ? { name: editing.name, rate: editing.rate, currency: editing.currency, avatar: editing.avatar }
@@ -158,9 +159,11 @@
 
     function done() {
       const v = values();
+      let saved = editing;
       if (editing) store.updateProject(editing.id, v);
-      else store.addProject(v);
+      else saved = store.addProject(v);
       ui.closeModal();
+      if (opts.onSaved) opts.onSaved(saved);
     }
     submit.addEventListener("click", done);
     el.addEventListener("keydown", (e) => {

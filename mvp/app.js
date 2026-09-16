@@ -199,7 +199,7 @@
     paintRange();
   });
   document.addEventListener("pointermove", (e) => {
-    if (!drag.active) return;
+    if (!drag.active || mobile.matches) return; // mobile: one day per tap, dragging would fight the page scroll
     const hit = document.elementFromPoint(e.clientX, e.clientY);
     const cell = hit && hit.closest(ACTIVE_DAY);
     if (cell && cell.dataset.key !== drag.end) { drag.end = cell.dataset.key; paintRange(); }
@@ -209,9 +209,12 @@
     drag.active = false;
     const keys = rangeKeys();
     if (!keys.length) return;
+    if (mobile.matches) { clearRange(); openDay(keys[0]); return; }
     if (store.active().length) openHours(keys, drag.end);
     else openPop(keys, drag.end);
   });
+  // A touch that turns into a scroll is cancelled by the browser: no selection, no drawer.
+  document.addEventListener("pointercancel", () => { if (drag.active) clearRange(); });
 
   /* Place a popover centred under the anchor day, or above it when there is no room below. */
   function place(pop, cell) {
@@ -376,6 +379,177 @@
     closePop();
     closeHoursFloat();
     if (!keepRange) clearRange();
+  }
+
+  /* ───── Day drawer · mobile, Figma 288:44918 ─────
+     Empty (292:98556) → project list (288:45002, 288:45112) → hours ruler (288:45141, 292:97017).
+     Projects are added and edited from here: mobile has no Projects section. [?] Ruler steps by 0.5 h,
+     0.5–16; the big number opens the keyboard for any value up to 24. Hours of a project already on the day
+     save as the ruler stops; Clear day removes only that project, with Reset in the toast. */
+
+  let daySheet = null; // { el, key, mode: "list" | "time", projectId, value, added }
+  const RULER_MAX = 16;
+  const HOUR_PX = 40; // 10 ticks of 4px per hour
+  const dayTitle = (key) => { const d = new Date(`${key}T00:00:00`); return `${MONTHS_LONG[d.getMonth()]} ${d.getDate()}`; };
+
+  function openDay(key, { projectId } = {}) {
+    const el = document.createElement("div");
+    el.className = "dsheet";
+    el.setAttribute("aria-label", dayTitle(key));
+    daySheet = { el, key, mode: "list", projectId: null, value: store.DEFAULT_HOURS, added: false };
+    el.addEventListener("click", onDayClick);
+    ui.openModal(el, { initialFocus: "[data-sheet-title]", onClose: () => { if (daySheet && daySheet.el === el) daySheet = null; } });
+    if (projectId) showTime(projectId);
+    else renderDay();
+  }
+  // Back to the drawer once a project modal has closed.
+  const reopenDay = (key, opts) => setTimeout(() => openDay(key, opts), ui.cssMs("--modal-close-dur"));
+
+  function renderDay() {
+    const { el, key } = daySheet;
+    daySheet.mode = "list";
+    const active = store.active();
+    const entries = store.dayEntries(key).filter((e) => { const p = store.project(e.projectId); return p && !p.archived; });
+    const onDay = new Map(entries.map((e) => [e.projectId, e.hours]));
+    const total = entries.reduce((a, e) => a + e.hours, 0);
+    const row = (p) => {
+      const h = onDay.get(p.id);
+      return `
+        <div class="drow" data-id="${p.id}"${h != null ? " data-selected" : ""}>
+          <button class="ds-icon-btn drow__settings" data-type="secondary" type="button" data-act="edit" aria-label="Edit ${ui.esc(p.name)}"><img src="assets/settings-24.svg" alt="" width="24" height="24"></button>
+          <button class="drow__main" type="button" data-act="time" aria-label="${ui.esc(p.name)}${h != null ? `, ${store.fmt.hours(h)} hours` : ""}">
+            <span class="drow__who"><img class="drow__avatar" src="${ui.avatarSrc(p.avatar)}" alt=""><span class="drow__name">${ui.esc(p.name)}</span></span>
+            ${h != null ? `<span class="drow__hours">${store.fmt.hours(h)} h</span>` : ""}
+          </button>
+          <span class="drow__chev" data-act="time" aria-hidden="true"><img src="assets/chevron-right-pink.svg" alt="" width="24" height="24"></span>
+        </div>`;
+    };
+    const selected = active.filter((p) => onDay.has(p.id));
+    const rest = active.filter((p) => !onDay.has(p.id));
+    el.dataset.mode = active.length ? "list" : "empty";
+    el.innerHTML = `
+      <div class="dsheet__head">
+        <h2 class="dsheet__title" tabindex="-1" data-sheet-title>${dayTitle(key)}</h2>
+        <span class="chip">${entries.length} added · ${store.fmt.hours(total)} h</span>
+      </div>
+      ${active.length ? `<div class="dsheet__list">${selected.map(row).join("")}${selected.length && rest.length ? `<span class="dsheet__sep" aria-hidden="true"></span>` : ""}${rest.map(row).join("")}</div>` : ""}
+      <div class="dsheet__foot">
+        <button class="ds-btn"${active.length ? ' data-type="secondary"' : ""} data-size="md" type="button" data-act="new"><img src="assets/${active.length ? "add-24" : "add-circle"}.svg" alt="" width="24" height="24"><span>Add new project</span></button>
+      </div>`;
+  }
+
+  function showTime(projectId) {
+    const p = store.project(projectId);
+    if (!p) { renderDay(); return; }
+    const entry = store.dayEntries(daySheet.key).find((e) => e.projectId === p.id);
+    Object.assign(daySheet, { mode: "time", projectId: p.id, value: entry ? entry.hours : store.DEFAULT_HOURS, added: !!entry });
+    const { el } = daySheet;
+    el.dataset.mode = "time";
+    el.innerHTML = `
+      <img class="dsheet__bg" src="assets/logo-bg.svg" alt="">
+      <div class="dsheet__head dsheet__head--time">
+        <button class="ds-icon-btn" data-type="secondary" data-variant="ghost" type="button" data-act="back" aria-label="Back to ${dayTitle(daySheet.key)}"><img src="assets/arrow-left.svg" alt="" width="20" height="20"></button>
+        <span class="dsheet__who"><img class="drow__avatar" src="${ui.avatarSrc(p.avatar)}" alt=""><h2 class="dsheet__name" tabindex="-1" data-sheet-title>${ui.esc(p.name)}</h2></span>
+      </div>
+      <div class="hours">
+        <label class="hours__value">
+          <input class="hours__input" type="text" inputmode="decimal" autocomplete="off" aria-label="Hours for ${ui.esc(p.name)}">
+          <span class="hours__num" aria-hidden="true"></span><span class="hours__unit" aria-hidden="true">h</span>
+        </label>
+        <div class="hours__ruler">
+          <div class="ruler" role="slider" tabindex="0" aria-label="Hours" aria-valuemin="0.5" aria-valuemax="${RULER_MAX}">
+            <div class="ruler__window"><div class="ruler__track"></div></div>
+            <img class="ruler__thumb" src="assets/ruler-thumb.svg" alt="">
+          </div>
+          <div class="ruler__scale" aria-hidden="true"><span>0</span><span>${RULER_MAX}</span></div>
+        </div>
+      </div>
+      <div class="dsheet__foot">
+        ${daySheet.added
+          ? `<button class="ds-btn" data-type="secondary" data-size="md" type="button" data-act="clear"><img src="assets/delete-24.svg" alt="" width="24" height="24"><span>Clear day</span></button>`
+          : `<button class="ds-btn" data-size="md" type="button" data-act="add"><span>Add <span class="dsheet__cta-value"></span>&nbsp;h.</span></button>`}
+      </div>`;
+    bindRuler();
+    setDayHours(daySheet.value, false);
+  }
+
+  function setDayHours(v, animate = true) {
+    const value = Math.min(24, Math.max(0.5, Math.round(v * 2) / 2));
+    daySheet.value = value;
+    const { el } = daySheet;
+    const ruler = el.querySelector(".ruler");
+    ruler.style.setProperty("--v", String(Math.min(value, RULER_MAX)));
+    ruler.setAttribute("aria-valuenow", String(value));
+    ruler.setAttribute("aria-valuetext", `${store.fmt.hours(value)} hours`);
+    ui.setNumber(el.querySelector(".hours__num"), store.fmt.hours(value), animate);
+    const input = el.querySelector(".hours__input");
+    if (document.activeElement !== input) input.value = store.fmt.hours(value);
+    const cta = el.querySelector(".dsheet__cta-value");
+    if (cta) cta.textContent = store.fmt.hours(value);
+  }
+  // A project already on the day saves as soon as the value settles.
+  function commitDayHours() {
+    if (daySheet && daySheet.mode === "time" && daySheet.added) store.setHours([daySheet.key], daySheet.projectId, daySheet.value);
+  }
+
+  function bindRuler() {
+    const ruler = daySheet.el.querySelector(".ruler");
+    const input = daySheet.el.querySelector(".hours__input");
+    let grab = null;
+    ruler.addEventListener("pointerdown", (e) => {
+      ruler.setPointerCapture(e.pointerId);
+      grab = { x: e.clientX, v: daySheet.value };
+      ruler.classList.add("is-dragging");
+    });
+    ruler.addEventListener("pointermove", (e) => {
+      if (!grab) return;
+      const next = Math.min(RULER_MAX, grab.v - (e.clientX - grab.x) / HOUR_PX);
+      if (Math.round(next * 2) / 2 !== daySheet.value) setDayHours(next);
+    });
+    const release = () => {
+      if (!grab) return;
+      grab = null;
+      ruler.classList.remove("is-dragging");
+      commitDayHours();
+    };
+    ruler.addEventListener("pointerup", release);
+    ruler.addEventListener("pointercancel", release);
+    ruler.addEventListener("keydown", (e) => {
+      const steps = { ArrowLeft: -0.5, ArrowDown: -0.5, ArrowRight: 0.5, ArrowUp: 0.5 };
+      if (e.key in steps) { e.preventDefault(); setDayHours(Math.min(RULER_MAX, daySheet.value + steps[e.key])); commitDayHours(); }
+      if (e.key === "Home" || e.key === "End") { e.preventDefault(); setDayHours(e.key === "Home" ? 0.5 : RULER_MAX); commitDayHours(); }
+    });
+    input.addEventListener("focus", () => input.select());
+    input.addEventListener("change", () => {
+      const v = parseFloat(input.value.replace(",", "."));
+      if (Number.isFinite(v)) { setDayHours(v); commitDayHours(); } else setDayHours(daySheet.value, false);
+    });
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } });
+  }
+
+  function onDayClick(e) {
+    const act = e.target.closest("[data-act]");
+    if (!act || !daySheet) return;
+    const { key } = daySheet;
+    const id = act.closest(".drow") && act.closest(".drow").dataset.id;
+    switch (act.dataset.act) {
+      case "time": showTime(id); break;
+      case "edit": modals.project(id, { onSaved: () => reopenDay(key) }); break;
+      case "new": modals.project(null, { onSaved: (p) => reopenDay(key, { projectId: p.id }) }); break;
+      case "back": renderDay(); break;
+      case "add":
+        store.setHours([key], daySheet.projectId, daySheet.value);
+        renderDay();
+        break;
+      case "clear": {
+        const p = store.project(daySheet.projectId);
+        const snap = store.snapshot();
+        store.removeFromDays([key], p.id);
+        renderDay();
+        ui.toast({ title: `${p.name} cleared`, onAction: () => store.restore(snap) });
+        break;
+      }
+    }
   }
 
   /* ───── Calendar menu · Figma 199:11366 ───── */
@@ -777,7 +951,11 @@
     setTab(item.dataset.tab);
     window.scrollTo({ top: 0 });
   });
-  mobile.addEventListener("change", () => { setExtra(false); placeNodes(); });
+  mobile.addEventListener("change", () => {
+    setExtra(false);
+    if (daySheet) ui.closeModal(); // the drawer is mobile-only; desktop uses the hours popover
+    placeNodes();
+  });
   $(".extra__glow").addEventListener("click", () => setExtra(false));
 
   /* Summary card. [?] "still empty" counts working days before today with no hours
@@ -864,6 +1042,7 @@
     renderProjects(true);
     renderOnboarding(true);
     renderSummary(true);
+    if (daySheet && (daySheet.mode === "list" || !store.project(daySheet.projectId))) renderDay();
     if (hours) {
       if (!store.active().length) closeDayPopovers();
       else renderHours();

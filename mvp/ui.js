@@ -263,6 +263,32 @@
 
   // The scrim and every [data-close] button inside a dialog close it.
   layer.addEventListener("click", (e) => { if (e.target.closest("[data-close]")) closeModal(); });
+
+  /* Mobile: dialogs are bottom sheets (app.css), and a downward swipe that starts on the head closes them.
+     Centred confirmations (.modal--confirm) don't swipe. */
+  const sheets = window.matchMedia("(max-width: 645px)");
+  layer.addEventListener("pointerdown", (e) => {
+    if (!current || !sheets.matches || current.dialog.classList.contains("modal--confirm")) return;
+    const head = e.target.closest(".modal__head, .dsheet__head");
+    if (!head || !current.dialog.contains(head) || e.target.closest("button, input")) return;
+    const dialog = current.dialog;
+    const y0 = e.clientY;
+    let dy = 0;
+    head.setPointerCapture(e.pointerId);
+    dialog.style.transition = "none";
+    const move = (ev) => { dy = Math.max(0, ev.clientY - y0); dialog.style.transform = `translateY(${dy}px)`; };
+    const up = () => {
+      head.removeEventListener("pointermove", move);
+      head.removeEventListener("pointerup", up);
+      head.removeEventListener("pointercancel", up);
+      dialog.style.transition = "";
+      dialog.style.transform = "";
+      if (dy > 80 && current && current.dialog === dialog) closeModal();
+    };
+    head.addEventListener("pointermove", move);
+    head.addEventListener("pointerup", up);
+    head.addEventListener("pointercancel", up);
+  });
   document.addEventListener("keydown", (e) => {
     if (!current) return;
     if (e.key === "Escape") { e.preventDefault(); closeModal(); return; }

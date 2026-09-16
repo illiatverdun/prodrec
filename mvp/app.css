@@ -1429,9 +1429,113 @@ body {
   .tabs__icon[data-icon="calendar"] { --icon: url("assets/nav-calendar.svg"); }
   .tabs__icon[data-icon="billing"] { --icon: url("assets/nav-bill.svg"); }
 
-  /* Toasts sit above the Nav bar, full width. */
-  .ds-toast-region { inset-inline: 16px; inset-block-end: calc(110px + env(safe-area-inset-bottom)); justify-items: stretch; }
-  .ds-toast.toast { min-inline-size: 0; }
+  /* Toasts sit above the Nav bar, full width, and over an open sheet. */
+  .ds-toast-region { z-index: 250; inset-inline: 16px; inset-block-end: calc(110px + env(safe-area-inset-bottom)); justify-items: stretch; }
+  .ds-toast.toast { inline-size: 100%; min-inline-size: 0; }
+  /* Mobile toast · Figma 277:48099: body text and an icon-only Reset. */
+  .toast .ds-toast__title { font: var(--ts-body-md-medium); }
+  .toast .ds-btn { padding-inline: 8px; }
+  .toast .ds-btn > span { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* Sheets · every modal rises from the bottom (Figma 288:46442, 288:44918); confirmations stay centred (288:46952).
+     Annotation 288:46720: at most 640px tall, so a tap above still closes it. */
+  .modal-layer { place-items: end stretch; padding: 0; }
+  .modal-scrim { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+  .modal:not(.modal--confirm) {
+    inline-size: 100%;
+    max-block-size: min(640px, calc(100dvh - 24px));
+    padding-block-end: calc(20px + env(safe-area-inset-bottom));
+    border-radius: 32px 32px 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .t-modal:not(.modal--confirm),
+  .t-modal.is-closing:not(.modal--confirm) { transform: translateY(100%); opacity: 1; }
+  .t-modal.is-open:not(.modal--confirm) { transform: none; }
+  .modal--confirm { align-self: center; margin: 16px; }
+  .modal:not(.modal--confirm) :is(.modal__head, .dsheet__head) { touch-action: none; }
+
+  /* Day drawer · 288:45002 (list), 292:98556 (empty), 292:97017 (hours) */
+  .modal.dsheet { gap: 8px; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+  .dsheet__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-block-size: 44px; padding: 10px 12px; }
+  .dsheet__head--time { justify-content: flex-start; padding-block: 10px; }
+  .dsheet__title { margin: 0; font: var(--ts-body-lg-medium); color: var(--text-primary); }
+  [data-sheet-title]:focus { outline: none; } /* focused on open so the sheet is announced, not to show a ring */
+  .dsheet__list { display: flex; flex-direction: column; gap: 8px; }
+  .dsheet__sep { block-size: 1px; margin: 6px 4px; background: var(--border-default-60); }
+  .drow {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    border: 1px solid var(--border-default-60);
+    border-radius: 16px;
+    background: var(--bg-secondary-10);
+    -webkit-backdrop-filter: var(--effect-bg-blur-md);
+    backdrop-filter: var(--effect-bg-blur-md);
+  }
+  .ds-icon-btn.drow__settings { flex: none; inline-size: 48px; block-size: 48px; border-radius: 16px; }
+  .drow__main {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-inline-size: 0;
+    block-size: 48px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 12px;
+    background: none;
+    color: var(--text-primary);
+    font: var(--ts-body-lg-regular);
+    text-align: start;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .drow[data-selected] .drow__main { background: var(--bg-card); box-shadow: var(--effect-popover-shadow-soft); } /* annotation 288:45116 */
+  .drow__main:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
+  .drow__who { display: flex; align-items: center; gap: 8px; min-inline-size: 0; }
+  .drow__avatar { flex: none; display: block; inline-size: 24px; block-size: 24px; border: 1px solid var(--border-subtle-20); border-radius: 8px; object-fit: cover; }
+  .drow__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .drow__hours { flex: none; font: var(--ts-body-lg-medium); }
+  .drow__chev { display: grid; flex: none; place-items: center; inline-size: 48px; block-size: 48px; cursor: pointer; }
+  .drow__chev img { display: block; }
+  .dsheet__foot { display: flex; padding: 12px 12px 16px; }
+  .dsheet__foot .ds-btn { flex: 1; block-size: 40px; }
+  .dsheet__foot .ds-btn img { inline-size: 24px; block-size: 24px; }
+
+  .dsheet__bg { position: absolute; right: -39px; bottom: -5px; inline-size: 159px; block-size: 127px; rotate: -17.36deg; pointer-events: none; }
+  .dsheet__who { display: flex; align-items: center; gap: 12px; min-inline-size: 0; }
+  .dsheet__name { overflow: hidden; margin: 0; font: var(--ts-headline-h6-semibold); color: var(--text-primary); text-overflow: ellipsis; white-space: nowrap; }
+  .hours { position: relative; display: flex; flex-direction: column; align-items: center; gap: 20px; padding-block: 24px; }
+  .hours__value { position: relative; display: flex; align-items: baseline; gap: 4px; padding-inline: 8px; border-radius: 12px; cursor: text; }
+  .hours__value:focus-within { box-shadow: var(--effect-focus-ring); }
+  .hours__input { position: absolute; inset: 0; inline-size: 100%; padding: 0; border: 0; background: none; color: transparent; caret-color: transparent; font-size: 16px; opacity: 0; }
+  .hours__num { font: var(--ts-headline-h1-semibold); color: var(--text-primary); }
+  .hours__unit { font: var(--ts-headline-h6-bold); color: var(--text-tertiary); }
+  .hours__ruler { display: flex; flex-direction: column; gap: 8px; align-self: stretch; }
+  /* Ticks every 4px, a tall one every 40px = 1 hour; the track slides under a fixed thumb. */
+  .ruler { position: relative; block-size: 24px; touch-action: none; cursor: grab; }
+  .ruler.is-dragging { cursor: grabbing; }
+  .ruler:focus-visible { outline: none; }
+  .ruler:focus-visible .ruler__window { box-shadow: var(--effect-focus-ring); }
+  .ruler__window { position: absolute; inset: 0; overflow: hidden; border-radius: 4px; }
+  .ruler__track {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    inline-size: 641px;
+    block-size: 24px;
+    translate: calc(var(--v, 8) * -40px - 0.5px) 0;
+    background:
+      repeating-linear-gradient(90deg, var(--text-tertiary) 0 1px, transparent 1px 40px) 0 50% / 100% 24px no-repeat,
+      repeating-linear-gradient(90deg, var(--color-gray-300) 0 1px, transparent 1px 4px) 0 50% / 100% 12px no-repeat;
+    transition: translate var(--duration-fast) var(--ease-smooth-out);
+  }
+  .ruler.is-dragging .ruler__track { transition-duration: var(--duration-micro); }
+  .ruler__thumb { position: absolute; left: 50%; top: -18px; inline-size: 14px; block-size: 67px; translate: -50% 0; pointer-events: none; }
+  .ruler__scale { display: flex; justify-content: space-between; padding-inline: 12px; font: var(--ts-body-md-regular); color: var(--text-tertiary); }
 }
 
 /* ───── [?] Selection popover — not in Figma, DS tokens only ───── */
