@@ -1317,17 +1317,17 @@ body {
   .cal-nav #today { flex: 1; }
   .cal-icon { zoom: calc(50 / 60); } /* 50px icon on mobile */
 
-  /* Days · 5 days: 67px squares, 7 days: 47×64; 2px gaps both ways. */
+  /* Days · 5 columns of 67px or 7 of 47px (288:39090), 2px gaps both ways. */
   .days { margin-block-start: 16px; }
   .days__head,
   .days__grid,
   .days[data-week="7"] .days__head,
   .days[data-week="7"] .days__grid { grid-template-columns: repeat(var(--cols, 5), 1fr); gap: 2px; }
   .days[data-week="7"] { --cols: 7; }
-  .days__grid { grid-auto-rows: auto; }
-  .days[data-week="7"] .days__grid { grid-auto-rows: 64px; }
-  .day { block-size: auto; aspect-ratio: 1; border-radius: 12px; }
-  .days[data-week="7"] .day { aspect-ratio: auto; }
+  /* 64px is the shortest a day card gets (Illia, 2026-09-16); it grows with the row, never forced square. */
+  .days__grid,
+  .days[data-week="7"] .days__grid { grid-auto-rows: minmax(64px, auto); }
+  .day { block-size: auto; min-block-size: 64px; border-radius: 12px; }
   .day__card { padding: 8px; border-radius: 8px; }
   .days[data-week="7"] .day__card { padding: 6px; }
   .day__num, .day[data-today] .day__num { font-size: 12px; line-height: 20px; }
@@ -1452,7 +1452,15 @@ body {
   .t-modal:not(.modal--confirm),
   .t-modal.is-closing:not(.modal--confirm) { transform: translateY(100%); opacity: 1; }
   .t-modal.is-open:not(.modal--confirm) { transform: none; }
-  .modal--confirm { align-self: center; margin: 16px; }
+  /* Confirmation · 288:46952: centred, narrower than the screen, buttons stacked full width. */
+  .modal.modal--confirm { align-self: center; justify-self: center; inline-size: calc(100% - 32px); max-inline-size: 440px; }
+  .modal--confirm .modal__foot { flex-direction: column; align-items: stretch; }
+  .modal--confirm .modal__foot .ds-btn { inline-size: 100%; }
+  /* New project · 288:46443: no Cancel, Create project takes the row. */
+  .modal__foot [data-cancel] { display: none; }
+  .modal__foot:has([data-cancel]) .ds-btn { flex: 1; }
+  /* A closed picker still counts toward the sheet's scroll height. */
+  .modal .ds-float:not(.is-open, .is-closing) { display: none; }
   .modal:not(.modal--confirm) :is(.modal__head, .dsheet__head) { touch-action: none; }
 
   /* Day drawer · 288:45002 (list), 292:98556 (empty), 292:97017 (hours) */

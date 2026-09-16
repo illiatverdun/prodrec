@@ -78,7 +78,7 @@
         ${editing
           ? `<button class="ds-btn" data-type="secondary" data-size="lg" type="button" id="pm-delete"><img src="assets/delete-24.svg" alt="" width="24" height="24"><span>Delete</span></button>
              <button class="ds-btn" data-size="lg" type="button" id="pm-submit" disabled>Save changes</button>`
-          : `<button class="ds-btn" data-type="secondary" data-size="lg" type="button" data-close>Cancel</button>
+          : `<button class="ds-btn" data-type="secondary" data-size="lg" type="button" data-close data-cancel>Cancel</button>
              <button class="ds-btn" data-size="lg" type="button" id="pm-submit">Create project</button>`}
       </div>`;
 
