@@ -55,8 +55,23 @@
                 <button class="ds-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="today"><span>Today</span></button>
                 <button class="ds-icon-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="next" aria-label="Next month"><span class="ds-icon"><img src="assets/arrow-right.svg" alt=""></span></button>
               </div>
-              <!-- D-009: calendar menu skipped -->
-              <button class="ds-icon-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" aria-label="More"><span class="ds-icon"><img src="assets/more.svg" alt=""></span></button>
+              <!-- Calendar menu · Figma 199:11366. D-009: items have no action yet, except the switch -->
+              <div class="menu" id="menu">
+                <button class="ds-icon-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="menu-toggle" aria-label="Calendar options" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-pop"><span class="ds-icon"><img src="assets/more.svg" alt=""></span></button>
+                <div class="ds-float ds-popover menu__pop" id="menu-pop" role="menu" aria-labelledby="menu-toggle">
+                  <button class="ds-menu-item" type="button" role="menuitem" tabindex="-1" data-close>
+                    <span class="ds-menu-item__main"><span class="menu__icon"><img src="assets/paste.svg" alt=""></span><span class="ds-menu-item__title">Copy previous month</span></span>
+                  </button>
+                  <div class="ds-menu-item" role="menuitemcheckbox" aria-checked="false" tabindex="-1" id="weekends-item">
+                    <span class="ds-menu-item__main"><span class="menu__icon"><img src="assets/calendar-add.svg" alt=""></span><span class="ds-menu-item__title">Weekends</span></span>
+                    <span class="ds-switch" id="weekends" aria-hidden="true"><input class="ds-switch__input" type="checkbox" tabindex="-1"><span class="ds-switch__track" aria-hidden="true"><span class="ds-switch__thumb"></span></span></span>
+                  </div>
+                  <span class="ds-separator" role="separator"></span>
+                  <button class="ds-menu-item" type="button" role="menuitem" tabindex="-1" data-tone="danger" data-close>
+                    <span class="ds-menu-item__main"><span class="menu__icon"><img src="assets/folder-delete.svg" alt=""></span><span class="ds-menu-item__title">Clear <span id="menu-month"></span></span></span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -65,12 +80,13 @@
             <div class="days__grid" id="grid"></div>
           </div>
 
-          <!-- Extra actions button · Figma 18:5882 (Normal / Hover / Press). D-009: actions skipped -->
+          <!-- Extra actions button · Figma 18:5882 (Normal / Hover / Press), points and tooltips · 97:1985.
+               --i is the fly-out order: bottom first, then middle, then top. D-009: actions skipped -->
           <div class="extra" id="extra" data-open="false">
             <span class="extra__glow" aria-hidden="true"></span>
-            <button class="extra__point" type="button" tabindex="-1" style="--i:0;--x:-21px;--y:-72px"><span class="extra__tip">Extra payments</span><span class="extra__btn"><img src="assets/currency-dollar.svg" alt=""></span></button>
-            <button class="extra__point" type="button" tabindex="-1" style="--i:1;--x:-60px;--y:-55px"><span class="extra__tip">Hours</span><span class="extra__btn"><img src="assets/time-duration.svg" alt=""></span></button>
-            <button class="extra__point" type="button" tabindex="-1" style="--i:2;--x:-70px;--y:-13px"><span class="extra__tip">Commission</span><span class="extra__btn"><img src="assets/bill-2.svg" alt=""></span></button>
+            <button class="extra__point" data-tip="left" type="button" tabindex="-1" aria-label="Commission" style="--i:0;--x:-70px;--y:-13px"><span class="extra__tip" aria-hidden="true">Commission</span><span class="extra__btn"><img src="assets/bill-2.svg" alt=""></span></button>
+            <button class="extra__point" data-tip="corner" type="button" tabindex="-1" aria-label="Extra hours" style="--i:1;--x:-60px;--y:-55px"><span class="extra__tip" aria-hidden="true">Extra hours</span><span class="extra__btn"><img src="assets/time-duration.svg" alt=""></span></button>
+            <button class="extra__point" data-tip="top" type="button" tabindex="-1" aria-label="Extra payments" style="--i:2;--x:-21px;--y:-72px"><span class="extra__tip" aria-hidden="true">Extra payments</span><span class="extra__btn"><img src="assets/currency-dollar.svg" alt=""></span></button>
             <button class="extra__blob" type="button" id="extra-toggle" aria-expanded="false" aria-label="Extra actions">
               <img class="extra__blob-img" src="assets/extra-blob.png" alt="">
               <img class="extra__icon" data-icon="add" src="assets/add.svg" alt="">
@@ -99,8 +115,18 @@
           <section class="card bill" aria-labelledby="bill-title" style="--i:3">
             <div class="card__title">
               <h2 id="bill-title">Billing</h2>
-              <!-- D-009: currency dropdown skipped -->
-              <button class="currency" type="button" aria-label="Currency: USD">USD<img src="assets/selector-vertical.svg" alt=""></button>
+              <!-- Currency dropdown · Figma 269:35841 -->
+              <div class="cur" id="cur">
+                <button class="currency" type="button" id="cur-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="cur-pop" aria-label="Currency: USD"><span class="t-text-swap" id="cur-code">USD</span><img src="assets/selector-vertical.svg" alt=""></button>
+                <div class="ds-float ds-popover cur__pop" id="cur-pop">
+                  <label class="cur__search">
+                    <img src="assets/search.svg" alt="">
+                    <input class="cur__input" id="cur-input" type="text" placeholder="Search currency" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="cur-list" aria-autocomplete="list" aria-label="Search currency">
+                  </label>
+                  <div class="cur__list" id="cur-list" role="listbox" aria-label="Currency"></div>
+                  <p class="ds-popover__empty" id="cur-empty" hidden>Nothing found</p>
+                </div>
+              </div>
             </div>
             <div class="receipt">
               <div class="receipt__body">
@@ -108,7 +134,7 @@
                   <span class="receipt__label">Total amount</span>
                   <span class="receipt__total">
                     <span class="chip" data-color="green"><span class="t-digit-group" id="bill-hours"></span>&nbsp;h.</span>
-                    <span class="receipt__amount">$&nbsp;<span class="t-digit-group" id="bill-total"></span></span>
+                    <span class="receipt__amount"><span class="t-text-swap" data-cur-symbol>$</span>&nbsp;<span class="t-digit-group" id="bill-total"></span></span>
                   </span>
                 </div>
                 <img class="receipt__sep" src="assets/separator.svg" alt="">
@@ -116,13 +142,13 @@
                   <span class="receipt__label" data-tone="muted">Taxes</span>
                   <span class="receipt__tax">
                     <span class="chip"><span class="t-digit-group" id="bill-tax-rate"></span>%</span>
-                    <span class="receipt__value">-$<span class="t-digit-group" id="bill-tax"></span></span>
+                    <span class="receipt__value">-<span class="t-text-swap" data-cur-symbol>$</span><span class="t-digit-group" id="bill-tax"></span></span>
                   </span>
                 </div>
                 <img class="receipt__sep" src="assets/separator.svg" alt="">
                 <div class="receipt__row receipt__row--net">
                   <span class="receipt__label" data-tone="plain">Net profit</span>
-                  <span class="receipt__net">$&nbsp;<span class="t-digit-group" id="bill-net"></span></span>
+                  <span class="receipt__net"><span class="t-text-swap" data-cur-symbol>$</span>&nbsp;<span class="t-digit-group" id="bill-net"></span></span>
                 </div>
                 <div class="barcode" aria-hidden="true">
                   <div class="barcode__bars" id="barcode"></div>
@@ -158,6 +184,7 @@
     <button class="ds-btn" data-size="md" type="button"><span class="ds-icon"><img src="assets/add-circle.svg" alt=""></span><span>Set up project</span></button>
   </div>
 
+  <script src="calendar-item.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

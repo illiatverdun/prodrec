@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>prod.rec · Calendar item</title>
+  <link rel="icon" type="image/png" href="../design-system/assets/images/prodrec-logo.png">
+  <link rel="stylesheet" href="../design-system/tokens.css">
+  <link rel="stylesheet" href="../design-system/components.css">
+  <link rel="stylesheet" href="app.css">
+  <style>
+    .vars { display: grid; gap: 32px; max-inline-size: 720px; margin: 0 auto; padding: 48px 16px 96px; }
+    .vars h1 { margin: 0; font: var(--ts-headline-h5-regular); }
+    .vars p { margin: 0; color: var(--text-secondary); font: var(--ts-body-md-regular); }
+    .vars__table { display: grid; grid-template-columns: 140px repeat(3, 100px); gap: 24px 24px; align-items: center; }
+    .vars__label { color: var(--text-tertiary); font: var(--ts-body-sm-medium); }
+    .vars__head { color: var(--text-tertiary); font: var(--ts-body-sm-medium); text-align: center; }
+  </style>
+</head>
+<body>
+  <main class="vars">
+    <div>
+      <h1>Calendar item</h1>
+      <p>Figma 113:8701 · 12 variants. The Hover column is pinned with <code>data-force="hover"</code>; every cell also reacts to a real hover. Hover the avatars.</p>
+    </div>
+    <div class="vars__table" id="table"></div>
+  </main>
+  <script src="calendar-item.js"></script>
+  <script>
+    (function () {
+      const avatars = [1, 2, 3, 4].map((n) => `assets/avatar-${n}.png`);
+      const rows = [
+        ["Default", {}],
+        ["Selected", { selected: true, avatars }],
+        ["Today", { today: true }],
+        ["Today · Selected", { today: true, selected: true, avatars }],
+      ];
+      const cols = [["Default", {}], ["Hover", { force: "hover" }], ["Disable", { disabled: true }]];
+      const table = document.getElementById("table");
+      table.innerHTML = `<span></span>${cols.map(([c]) => `<span class="vars__head">${c}</span>`).join("")}` +
+        rows.map(([r, ro]) => `<span class="vars__label">${r}</span>` +
+          cols.map(([, co]) => CalendarItem.markup({ day: 3, ...ro, ...co })).join("")).join("");
+      CalendarItem.bindAvatarHover(table);
+    })();
+  </script>
+</body>
+</html>

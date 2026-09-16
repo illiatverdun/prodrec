@@ -14,12 +14,24 @@
     0 134px 80px rgba(227, 227, 227, 0.05),
     0 238px 95px rgba(227, 227, 227, 0.01);
 
-  /* Gentle motion: the shared transitions.dev scale, a touch slower and without overshoot. */
+  /* transitions.dev variables the snippets read and tokens.css does not define.
+     Without them the snippet's whole `transition` / `transform` declaration is
+     invalid and the browser drops it: the text swap blinked instead of moving. */
+  --text-swap-ease: ease-in-out;
+  --digit-stagger: 70ms;
+  --digit-dir-x: 0;
+  --digit-dir-y: 1;
+  --icon-swap-ease: ease-in-out;
+  --avatar-lift: -4px;
+  --avatar-dur: 320ms;
+  --avatar-scale: 1.05;
+  --avatar-falloff: 0.45;
+  --avatar-ease-in: cubic-bezier(0.22, 1, 0.36, 1);
+  --avatar-ease-out: cubic-bezier(0.34, 3.85, 0.64, 1);
+
+  /* Month grid slide — page side-by-side, shortened for a grid that changes on every arrow click. */
   --air-dur: 480ms;
   --air-ease: var(--ease-smooth-out);
-  --digit-dur: 460ms;
-  --digit-distance: 6px;
-  --digit-ease: var(--ease-smooth-out);
 }
 
 * { box-sizing: border-box; }
@@ -109,56 +121,175 @@ body {
 }
 .days__grid.is-exit {
   opacity: 0;
-  translate: calc(var(--dir, 1) * -8px) 0;
-  filter: blur(2px);
-  transition-duration: 160ms;
+  translate: calc(var(--dir, 1) * -1 * var(--distance-base)) 0;
+  filter: blur(var(--motion-blur-small));
+  transition-duration: var(--duration-quick);
   transition-timing-function: ease-in;
 }
-.days__grid.is-enter-start { opacity: 0; translate: calc(var(--dir, 1) * 8px) 0; filter: blur(2px); transition: none; }
+.days__grid.is-enter-start {
+  opacity: 0;
+  translate: calc(var(--dir, 1) * var(--distance-base)) 0;
+  filter: blur(var(--motion-blur-small));
+  transition: none;
+}
 
-/* Calendar item · Figma 113:8701. Figma strokes sit inside, so padding shrinks by the stroke. */
+/* ───── Calendar item · Figma 113:8701 ─────
+   12 variants: State (Default / Hover) × Selected × Disable × Today.
+   Selected = the day has logged projects (avatars). Disable = a day outside the month.
+   Drag selection reuses Hover. [data-force~="hover"] pins Hover for the variants page.
+   Every state is a variable swap, so every change rides the same transitions:
+   hover in on --duration-quick, hover out slower on --duration-fast. */
+
 .day {
+  --day-bg: var(--bg-secondary-10);
+  --day-stroke: var(--border-default-60);
+  --day-card: var(--bg-card);
+  --day-card-shadow: var(--effect-popover-shadow-soft);
+  --day-stripes: 0;
+  --day-num: var(--text-secondary);
+  --day-dur: var(--duration-fast);
+  position: relative;
   block-size: 100px;
-  padding: 3px;
-  border: 1px solid var(--border-default-60);
+  padding: 3px; /* Figma strokes sit inside: 4px padding minus the 1px stroke */
+  border: 1px solid var(--day-stroke);
   border-radius: 24px;
-  background: var(--bg-secondary-10);
-  backdrop-filter: blur(12px);
+  background: var(--day-bg);
+  -webkit-backdrop-filter: var(--effect-bg-blur-md);
+  backdrop-filter: var(--effect-bg-blur-md);
   overflow: hidden;
   cursor: pointer;
   user-select: none;
   transition:
-    background-color var(--duration-fast) var(--air-ease),
-    opacity var(--duration-fast) var(--air-ease);
+    background-color var(--day-dur) var(--ease-smooth-out),
+    border-color var(--day-dur) var(--ease-smooth-out),
+    opacity var(--day-dur) var(--ease-smooth-out);
 }
 .day__card {
+  position: relative;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   justify-content: space-between;
   block-size: 100%;
   padding: 12px;
   border-radius: 20px;
-  background: var(--bg-card);
-  box-shadow: var(--effect-popover-shadow-soft);
-  transition: background-color var(--duration-fast) var(--air-ease);
+  background: var(--day-card);
+  box-shadow: var(--day-card-shadow);
+  transition:
+    background-color var(--day-dur) var(--ease-smooth-out),
+    box-shadow var(--day-dur) var(--ease-smooth-out);
 }
-.day__num { font: var(--ts-body-lg-medium); color: var(--text-secondary); }
+/* Today pattern · Figma 21:6079: a #FFC7FF line, tile scaled to 0.41, fill at 16%. */
+.day__card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(120deg, var(--color-pink-200) 0 5.7px, transparent 5.7px 10.56px);
+  opacity: calc(var(--day-stripes) * 0.16);
+  pointer-events: none;
+  transition: opacity var(--day-dur) var(--ease-smooth-out);
+}
+.day__num {
+  position: relative;
+  font: var(--ts-body-lg-medium);
+  color: var(--day-num);
+  transition: color var(--day-dur) var(--ease-smooth-out);
+}
+.day__avatars { position: relative; display: flex; }
+.day__avatar {
+  display: block;
+  inline-size: 20px;
+  block-size: 20px;
+  margin-inline-end: -8px;
+  border: 1px solid var(--border-subtle-20);
+  border-radius: var(--rounded-md);
+  object-fit: cover;
+}
+.day__avatar:last-child { margin-inline-end: 0; }
 
-.day[data-other] { opacity: 0.3; cursor: default; }
-.day[data-today] { padding: 2px; border: 2px solid var(--border-accent); }
-.day[data-today] .day__num { font: var(--ts-body-lg-semibold); color: var(--text-accent); }
-.day[data-today] .day__card {
-  background: repeating-linear-gradient(135deg, var(--color-pink-50) 0 4.5px, var(--bg-card) 4.5px 9px);
+.day[data-selected] { --day-num: var(--text-primary); }
+
+.day[data-today] {
+  --day-stroke: var(--border-accent);
+  --day-stripes: 1;
+  --day-num: var(--text-accent);
+  padding: 2px;
+  border-width: 2px;
+}
+.day[data-today] .day__num { font: var(--ts-body-lg-semibold); }
+.day[data-today][data-selected] .day__num {
+  background: linear-gradient(120.9deg, var(--color-pink-700), var(--color-pink-900));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.day:not([data-other]):hover,
-.day[data-range] { background: var(--bg-secondary-20); }
-.day:not([data-other], [data-today]):hover .day__card,
-.day[data-range]:not([data-today]) .day__card { background: var(--bg-card-80); }
-.day[data-today]:is(:hover, [data-range]) { background: var(--bg-secondary-10); }
-.day[data-today]:is(:hover, [data-range]) .day__card { background: var(--bg-card); }
+/* Hover · not today: the frame darkens, the card turns translucent. */
+.day:not([data-disabled], [data-today]):is(:hover, [data-range], [data-force~="hover"]) {
+  --day-bg: var(--bg-secondary-20);
+  --day-card: var(--bg-card-80);
+  --day-dur: var(--duration-quick);
+}
+/* Hover · today: the frame stays, the stripes clear. */
+.day[data-today]:not([data-disabled]):is(:hover, [data-range], [data-force~="hover"]) {
+  --day-stripes: 0;
+  --day-dur: var(--duration-quick);
+}
 
-/* ───── Extra actions · Figma 18:5882 ───── */
+/* No backdrop blur here: Chrome paints a hairline seam when it meets opacity, and at 30% it shows nothing anyway. */
+.day[data-disabled] { opacity: 0.3; cursor: default; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.day[data-disabled][data-selected]:not([data-today]) {
+  --day-bg: var(--bg-secondary-20);
+  --day-card: var(--bg-card-50);
+  --day-card-shadow: none;
+}
+
+.day:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
+
+/* Avatar group hover (transitions.dev 11), verbatim. */
+.t-avatar {
+  transform-origin: center;
+  transform:
+    translateY(var(--shift, 0px))
+    scale(var(--scale-active, 1));
+  transition: transform var(--avatar-dur) var(--avatar-ease-in);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-avatar { transition: none !important; transform: none !important; }
+}
+
+/* ───── Calendar menu · Figma 199:11366 ───── */
+
+.menu { position: relative; }
+.menu > .ds-icon-btn[aria-expanded="true"] { --btn-bg: var(--bg-secondary-50); }
+
+.menu__pop {
+  --float-origin: top right;
+  inset-block-start: calc(100% + 6px);
+  inset-inline-end: 0;
+  inline-size: 250px;
+  border-radius: 20px;
+}
+.menu__pop .ds-menu-item {
+  gap: var(--spacing-md);
+  min-block-size: 40px;
+  padding: 4px 8px;
+  border-radius: 16px;
+}
+.menu__pop .ds-menu-item__main { gap: 6px; }
+.menu__icon { display: grid; flex: none; place-items: center; inline-size: 32px; block-size: 32px; }
+.menu__icon img { display: block; inline-size: 20px; block-size: 20px; }
+.menu__pop .ds-menu-item[data-tone="danger"] .ds-menu-item__title { color: var(--text-destructive); }
+.menu__pop .ds-separator { padding: 0; }
+.menu__pop .ds-switch { pointer-events: none; }
+
+/* ───── Extra actions · Figma 18:5882 (button) + 97:1985 (points) ─────
+   Normal → Hover: the blob and the hidden points behind it shift up-left together
+   with a small bounce. Press: the points fly out from behind the blob,
+   bottom → middle → top, --duration-stagger apart; close runs the order back. */
 
 .extra {
   position: absolute;
@@ -177,25 +308,32 @@ body {
   background: url("assets/glow.svg") center / 100% 100% no-repeat;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--air-dur) var(--air-ease);
+  transition: opacity var(--duration-slow) var(--ease-smooth-out);
 }
 .extra__blob {
   position: absolute;
   left: 169px;
   top: 103px;
-  z-index: 1;
+  z-index: 2;
   inline-size: 80px;
   block-size: 80px;
   padding: 0;
   border: 0;
+  border-radius: 50%; /* round hit area: the square box would cover the Extra hours point */
   background: none;
   cursor: pointer;
   pointer-events: auto;
-  transition: translate var(--air-dur) var(--air-ease);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    translate var(--duration-medium) var(--ease-smooth-out),
+    scale var(--duration-very-slow) var(--ease-bounce);
 }
 .extra__blob:focus-visible { outline: none; }
 .extra__blob:focus-visible .extra__blob-img { filter: drop-shadow(0 0 0 var(--color-pink-700)) drop-shadow(0 0 3px var(--color-pink-700)); }
 .extra__blob-img { position: absolute; inset: 4px 0 1px; inline-size: 80px; block-size: 75px; }
+.extra__blob img { pointer-events: none; }
+
+/* Icon swap (transitions.dev 09) on + / ×. */
 .extra__icon {
   position: absolute;
   left: 20px;
@@ -203,80 +341,150 @@ body {
   inline-size: 24px;
   block-size: 24px;
   transition:
-    translate var(--air-dur) var(--air-ease),
-    opacity var(--duration-fast) var(--ease-in-out),
-    filter var(--duration-fast) var(--ease-in-out),
-    rotate var(--air-dur) var(--air-ease);
+    opacity   var(--icon-swap-dur) var(--icon-swap-ease),
+    filter    var(--icon-swap-dur) var(--icon-swap-ease),
+    transform var(--icon-swap-dur) var(--icon-swap-ease),
+    translate var(--duration-very-slow) var(--ease-bounce);
+  will-change: opacity, filter, transform;
 }
-.extra__icon[data-icon="close"] { opacity: 0; rotate: -90deg; filter: blur(2px); }
+.extra__icon[data-icon="close"],
+.extra[data-open="true"] .extra__icon[data-icon="add"] {
+  opacity: 0;
+  filter: blur(var(--icon-swap-blur));
+  transform: scale(var(--icon-swap-start-scale));
+}
+.extra[data-open="true"] .extra__icon[data-icon="close"] { opacity: 1; filter: blur(0); transform: scale(1); }
 
-.extra:hover .extra__glow,
+.extra:is(:hover, :focus-within) .extra__glow,
 .extra[data-open="true"] .extra__glow { opacity: 1; }
-.extra:hover .extra__blob { translate: -27px -26px; }
+.extra:is(:hover, :focus-within, [data-open="true"]) .extra__blob {
+  translate: -27px -26px;
+  transition:
+    translate var(--duration-very-slow) var(--ease-bounce),
+    scale var(--duration-very-slow) var(--ease-bounce);
+}
 .extra[data-open="true"] .extra__blob { translate: -26px -25px; }
-.extra:is(:hover, [data-open="true"]) .extra__icon { translate: 7px 6px; }
-.extra[data-open="true"] .extra__icon[data-icon="add"] { opacity: 0; rotate: 90deg; filter: blur(2px); }
-.extra[data-open="true"] .extra__icon[data-icon="close"] { opacity: 1; rotate: 0deg; filter: blur(0); }
+.extra__blob:active { scale: var(--motion-scale-large); transition-duration: var(--duration-very-slow), var(--duration-micro); }
+.extra:is(:hover, :focus-within, [data-open="true"]) .extra__icon { translate: 7px 6px; }
 
 .extra__point {
   position: absolute;
   left: 183px;
   top: 120px;
-  z-index: 2;
+  z-index: 1; /* under the blob: points hide behind it and fly out from behind it */
   inline-size: 40px;
   block-size: 40px;
   padding: 0;
   border: 0;
   background: none;
   opacity: 0;
-  scale: 0.8;
-  filter: blur(2px);
+  scale: 0.6;
+  filter: blur(var(--motion-blur-small));
+  pointer-events: none;
   cursor: pointer;
+  /* Closing: top leaves first, quick and without overshoot. */
   transition:
-    translate var(--air-dur) var(--air-ease),
-    scale var(--air-dur) var(--air-ease),
-    opacity var(--duration-fast) var(--ease-in-out),
-    filter var(--duration-fast) var(--ease-in-out);
+    translate var(--duration-medium) var(--ease-smooth-out),
+    scale var(--duration-medium) var(--ease-smooth-out),
+    opacity var(--duration-quick) var(--ease-in-out),
+    filter var(--duration-quick) var(--ease-in-out);
+  transition-delay: calc((2 - var(--i)) * var(--duration-stagger));
 }
+/* Hover, still closed: ride along behind the blob (Figma Hover keeps them at 162, 98). */
+.extra:is(:hover, :focus-within) .extra__point {
+  translate: -21px -22px;
+  transition:
+    translate var(--duration-very-slow) var(--ease-bounce),
+    scale var(--duration-medium) var(--ease-smooth-out),
+    opacity var(--duration-quick) var(--ease-in-out),
+    filter var(--duration-quick) var(--ease-in-out);
+}
+/* Open: bottom first, then middle, then top; each lands with a small overshoot. */
 .extra[data-open="true"] .extra__point {
   translate: var(--x) var(--y);
   scale: 1;
   opacity: 1;
-  filter: blur(0);
+  filter: none; /* not blur(0): any filter would cut the tooltip's backdrop blur */
   pointer-events: auto;
+  transition:
+    translate var(--duration-very-slow) var(--ease-bounce),
+    scale var(--duration-very-slow) var(--ease-bounce),
+    opacity var(--duration-fast) var(--ease-out),
+    filter var(--duration-fast) var(--ease-out);
   transition-delay: calc(var(--i) * var(--duration-stagger));
 }
+
 .extra__btn {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   inline-size: 40px;
   block-size: 40px;
   border-radius: 12px;
   background: var(--bg-secondary-20);
-  transition: background-color var(--duration-quick) var(--air-ease);
+  transition: background-color var(--duration-quick) var(--ease-smooth-out), scale var(--duration-quick) var(--ease-smooth-out);
 }
 .extra__btn img { display: block; inline-size: 20px; block-size: 20px; }
 .extra__point:hover .extra__btn { background: var(--bg-secondary-50); }
+.extra__point:active .extra__btn { scale: var(--motion-scale-large); }
 .extra__point:focus-visible { outline: none; }
 .extra__point:focus-visible .extra__btn { box-shadow: var(--effect-focus-ring); }
+
+/* Tooltips · Figma 97:1985. Each grows out from behind its own button (Figma Off state tucks
+   it under the button), with the tooltip snippet's timing: delayed in, near-instant out. */
 .extra__tip {
   position: absolute;
-  top: 50%;
-  right: calc(100% + 8px);
+  z-index: 0;
   padding: 7px 11px;
   border: 1px solid var(--border-muted);
   border-radius: 12px;
   background: var(--bg-card-80);
-  backdrop-filter: blur(32px);
+  -webkit-backdrop-filter: var(--effect-bg-blur-xxl);
+  backdrop-filter: var(--effect-bg-blur-xxl);
   color: var(--text-secondary);
   font: var(--ts-body-md-regular);
   white-space: nowrap;
   opacity: 0;
-  translate: 4px -50%;
+  scale: var(--tt-scale);
+  translate: var(--tip-from);
+  transform-origin: var(--tip-origin);
   pointer-events: none;
-  transition: opacity var(--duration-quick) var(--ease-in-out), translate var(--duration-fast) var(--air-ease);
+  transition:
+    opacity   var(--tt-out-dur) var(--tt-out-ease),
+    scale     var(--tt-out-dur) var(--tt-out-ease),
+    translate var(--tt-out-dur) var(--tt-out-ease);
 }
-.extra__point:is(:hover, :focus-visible) .extra__tip { opacity: 1; translate: 0 -50%; }
+.extra[data-open="true"] .extra__point:is(:hover, :focus-visible) .extra__tip {
+  opacity: 1;
+  scale: 1;
+  translate: 0 0;
+  transition:
+    opacity   var(--tt-in-dur) var(--tt-in-ease) var(--tt-delay),
+    scale     var(--tt-in-dur) var(--tt-in-ease) var(--tt-delay),
+    translate var(--duration-fast) var(--ease-smooth-out) var(--tt-delay);
+}
+/* Bottom · Commission: classic, to the left. */
+.extra__point[data-tip="left"] .extra__tip {
+  --tip-from: var(--distance-base) 0;
+  --tip-origin: right center;
+  top: 0;
+  right: calc(100% + 8px);
+}
+/* Middle · Extra hours: on the corner, 45° up-left, its corner touching the button's. */
+.extra__point[data-tip="corner"] .extra__tip {
+  --tip-from: var(--distance-micro) var(--distance-micro);
+  --tip-origin: right bottom;
+  right: 100%;
+  bottom: calc(100% - 2px);
+}
+/* Top · Extra payments: above, right edges aligned. */
+.extra__point[data-tip="top"] .extra__tip {
+  --tip-from: 0 var(--distance-base);
+  --tip-origin: right bottom;
+  right: 0;
+  bottom: calc(100% + 8px);
+}
 
 /* ───── Onboarding · Figma 93:1280 ───── */
 
@@ -311,8 +519,9 @@ body {
 
 /* ───── Billing · Figma 93:1287 ───── */
 
-.bill { block-size: 239px; gap: 12px; }
+.bill { z-index: 1; block-size: 239px; gap: 12px; }
 
+.cur { position: relative; }
 .currency {
   display: inline-flex;
   align-items: center;
@@ -326,8 +535,70 @@ body {
   color: var(--color-gray-800);
   font: var(--ts-body-sm-regular);
   cursor: pointer;
+  transition: box-shadow var(--duration-quick) var(--ease-smooth-out), scale var(--duration-quick) var(--ease-smooth-out);
 }
+.currency:active { scale: var(--motion-scale-small); }
+.currency:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--color-gray-300), var(--effect-focus-ring); }
 .currency img { display: block; inline-size: 16px; block-size: 16px; }
+
+/* Currency dropdown · Figma 269:35841 */
+.cur__pop {
+  --float-origin: top right;
+  inset-block-start: calc(100% + 8px);
+  inset-inline-end: 0;
+  inline-size: 280px;
+  block-size: 250px;
+  border-radius: 20px;
+  overflow: hidden;
+}
+.cur__search {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  border: 1px solid var(--border-default-60);
+  border-radius: var(--rounded-full);
+  background: var(--bg-secondary-10);
+  cursor: text;
+  transition: border-color var(--duration-quick) var(--ease-smooth-out), box-shadow var(--duration-quick) var(--ease-smooth-out);
+}
+.cur__search:hover { border-color: var(--border-muted); }
+.cur__search:focus-within { border-color: var(--border-accent); }
+.cur__search img { display: block; flex: none; inline-size: 16px; block-size: 16px; }
+.cur__input {
+  flex: 1;
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text-primary);
+  font: var(--ts-body-lg-regular);
+}
+.cur__input::placeholder { color: var(--text-secondary); }
+.cur__list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.cur__list .ds-menu-item {
+  flex: none;
+  gap: 12px;
+  min-block-size: 40px;
+  padding: 8px 12px;
+  border-radius: 16px;
+}
+.cur__sym, .cur__code { flex: none; font: var(--ts-body-lg-regular); color: var(--text-primary); }
+.cur__sym { inline-size: 24px; }
+.cur__code { inline-size: 50px; }
+.cur__name { overflow: hidden; color: var(--text-tertiary); font: var(--ts-body-md-medium); text-overflow: ellipsis; white-space: nowrap; }
 
 .chip {
   display: inline-flex;
@@ -407,21 +678,18 @@ body {
   padding: 16px;
   border-radius: 20px;
   background: var(--bg-card);
-  box-shadow: inset 0 0 0 1px var(--border-default-60), var(--effect-popover-shadow-hard, var(--effect-popover-shadow-soft));
+  box-shadow: inset 0 0 0 1px var(--border-default-60), var(--effect-popover-shadow-soft);
   opacity: 0;
-  scale: var(--scale-medium, 0.97);
-  filter: blur(2px);
+  scale: var(--dropdown-closing-scale);
   transform-origin: var(--origin, top left);
   transition:
-    opacity var(--duration-quick) var(--ease-in-out),
-    scale var(--duration-quick) var(--air-ease),
-    filter var(--duration-quick) var(--ease-in-out);
+    opacity var(--dropdown-close-dur) var(--dropdown-ease),
+    scale var(--dropdown-close-dur) var(--dropdown-ease);
 }
 .pop.is-open {
   opacity: 1;
   scale: 1;
-  filter: blur(0);
-  transition-duration: var(--duration-fast);
+  transition-duration: var(--dropdown-open-dur);
 }
 .pop__title { margin: 0; font: var(--ts-body-lg-medium); }
 .pop__text { margin: 0; color: var(--text-secondary); font: var(--ts-body-md-regular); }
@@ -432,8 +700,9 @@ body {
   from { opacity: 0; translate: 0 8px; filter: blur(3px); }
   to { opacity: 1; translate: 0 0; filter: blur(0); }
 }
+/* `backwards`, not `both`: a kept blur(0) would stay a filter and cut backdrop blur inside the cards. */
 .hdr, .cal, .side > .card, .foot {
-  animation: air-rise 700ms var(--air-ease) both;
+  animation: air-rise 700ms var(--air-ease) backwards;
   animation-delay: calc(var(--i, 0) * 70ms);
 }
 
