@@ -786,6 +786,28 @@
   $("#proj-more").addEventListener("click", () => { projOpen = true; renderProjects(true); $("#proj-less").focus({ preventScroll: true }); });
   $("#proj-less").addEventListener("click", () => { projOpen = false; renderProjects(true); });
 
+  /* Archived projects · mobile, Figma 288:39424. [?] Restore is immediate with Reset in the toast;
+     delete goes through the same confirmation as the Archived tab on desktop. */
+  function renderArchive() {
+    const list = store.archived();
+    $("#arch").hidden = !list.length;
+    $("#arch-list").innerHTML = list.map((p) => `
+      <div class="drow arch__row" data-id="${p.id}">
+        <span class="arch__main"><span class="drow__who"><img class="drow__avatar" src="${ui.avatarSrc(p.avatar)}" alt=""><span class="drow__name">${ui.esc(p.name)}</span></span></span>
+        <button class="ds-icon-btn arch__btn" data-type="secondary" data-variant="ghost" type="button" data-act="restore" aria-label="Restore ${ui.esc(p.name)}"><img src="assets/restore-24.svg" alt="" width="24" height="24"></button>
+        <button class="ds-icon-btn arch__btn" data-type="secondary" type="button" data-act="delete" aria-label="Delete ${ui.esc(p.name)}"><img src="assets/delete-24-red.svg" alt="" width="24" height="24"></button>
+      </div>`).join("");
+  }
+  $("#arch-list").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    const p = store.project(btn.closest(".arch__row").dataset.id);
+    if (btn.dataset.act === "delete") { modals.confirmArchivedDelete(p.id); return; }
+    const snap = store.snapshot();
+    store.archiveProject(p.id, false);
+    ui.toast({ title: `${p.name} restored`, onAction: () => store.restore(snap) });
+  });
+
   /* ───── Billing · Figma 100:2521 ───── */
 
   $("#bill-cur").insertAdjacentHTML("beforeend", ui.pickerMarkup());
@@ -1042,6 +1064,7 @@
     renderProjects(true);
     renderOnboarding(true);
     renderSummary(true);
+    renderArchive();
     if (daySheet && (daySheet.mode === "list" || !store.project(daySheet.projectId))) renderDay();
     if (hours) {
       if (!store.active().length) closeDayPopovers();
@@ -1065,5 +1088,6 @@
   renderProjects(false);
   renderBilling(false);
   renderSummary(false);
+  renderArchive();
   setTab(tab, { save: false });
 })();

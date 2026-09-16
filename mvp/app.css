@@ -1230,6 +1230,9 @@ body {
   .barcode__bars { justify-content: center; }
 }
 
+.cur__scrim { display: none; }
+.arch { display: none; }
+
 /* ───── Mobile · Figma 277:42013 (empty), 288:39208 / 288:39090 (calendar, 5 / 7 days), 288:40202 (billing) ─────
    A summary card under the header, then one tab at a time, switched by the Nav bar.
    No Projects section and no footer: projects are added and edited from the day drawer. */
@@ -1429,6 +1432,34 @@ body {
   .tabs__icon[data-icon="calendar"] { --icon: url("assets/nav-calendar.svg"); }
   .tabs__icon[data-icon="billing"] { --icon: url("assets/nav-bill.svg"); }
 
+  /* Archived projects · 288:39424 */
+  .arch:not([hidden]) { display: flex; flex-direction: column; gap: 10px; padding-block-start: 24px; }
+  .arch__label { margin: 0; padding-inline-start: 4px; font: var(--ts-body-md-medium); color: var(--text-tertiary); }
+  .arch__list { display: flex; flex-direction: column; gap: 8px; }
+  .arch__main { display: flex; flex: 1; align-items: center; min-inline-size: 0; padding: 12px; }
+  .ds-icon-btn.arch__btn { flex: none; inline-size: 48px; block-size: 48px; border-radius: 16px; }
+  .ds-icon-btn.arch__btn img { inline-size: 24px; block-size: 24px; }
+
+  /* Currency picker · no mobile frame in Figma. [?] The same search and list as a bottom sheet. */
+  .cur__pop,
+  .modal .cur__pop {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 300;
+    inline-size: auto;
+    block-size: min(420px, 70dvh);
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    border-radius: 32px 32px 0 0;
+    max-inline-size: none;
+    overflow: visible; /* the scrim sits above the sheet */
+    transform: translateY(100%);
+    opacity: 1;
+  }
+  .cur__pop.is-open { transform: none; }
+  .cur__pop.is-closing { transform: translateY(100%); opacity: 1; }
+  .cur__scrim { position: absolute; inset-inline: 0; inset-block-end: 100%; display: block; block-size: 100dvh; background: rgba(0, 0, 0, 0.06); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
+  .bill:has(.cur__pop:is(.is-open, .is-closing)) { z-index: 80; } /* over the Nav bar */
+
   /* Toasts sit above the Nav bar, full width, and over an open sheet. */
   .ds-toast-region { z-index: 250; inset-inline: 16px; inset-block-end: calc(110px + env(safe-area-inset-bottom)); justify-items: stretch; }
   .ds-toast.toast { inline-size: 100%; min-inline-size: 0; }
@@ -1451,7 +1482,7 @@ body {
   }
   .t-modal:not(.modal--confirm),
   .t-modal.is-closing:not(.modal--confirm) { transform: translateY(100%); opacity: 1; }
-  .t-modal.is-open:not(.modal--confirm) { transform: none; }
+  .t-modal.is-open:not(.modal--confirm) { transform: none; will-change: auto; } /* will-change: transform would trap fixed pickers inside the sheet */
   /* Confirmation · 288:46952: centred, narrower than the screen, buttons stacked full width. */
   .modal.modal--confirm { align-self: center; justify-self: center; inline-size: calc(100% - 32px); max-inline-size: 440px; }
   .modal--confirm .modal__foot { flex-direction: column; align-items: stretch; }

@@ -134,6 +134,7 @@
 
   /* ───── Currency picker · Figma 269:35841 ─────
      One list, three triggers: the Billing badge, the project rate input, the Deductions badge. */
+  const phone = window.matchMedia("(max-width: 645px)");
   function currencyPicker({ root, toggle, pop, get, choose }) {
     const input = pop.querySelector(".cur__input");
     const list = pop.querySelector(".cur__list");
@@ -167,7 +168,8 @@
         openFloat(pop);
         const sel = list.querySelector('[aria-selected="true"]');
         if (sel) sel.scrollIntoView({ block: "nearest" });
-        input.focus({ preventScroll: true });
+        // On a phone the picker is a sheet: focusing search would throw up the keyboard over six options.
+        if (!phone.matches) input.focus({ preventScroll: true });
       } else {
         closeFloat(pop);
         if (pop.contains(document.activeElement)) toggle.focus({ preventScroll: true });
@@ -182,6 +184,7 @@
     input.setAttribute("aria-controls", listId);
     toggle.addEventListener("click", () => set(!isOpen(pop)));
     input.addEventListener("input", render);
+    pop.querySelector(".cur__scrim").addEventListener("click", () => set(false));
     list.addEventListener("click", (e) => {
       const opt = e.target.closest("[data-code]");
       if (!opt) return;
@@ -202,6 +205,7 @@
 
   const pickerMarkup = (extraClass = "") => `
     <div class="ds-float ds-popover cur__pop ${extraClass}">
+      <span class="cur__scrim" aria-hidden="true"></span>
       <label class="cur__search">
         <img src="assets/search.svg" alt="">
         <input class="cur__input" type="text" placeholder="Search currency" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-autocomplete="list" aria-label="Search currency">
