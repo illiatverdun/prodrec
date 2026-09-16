@@ -33,6 +33,7 @@
       projects: [],        // { id, name, rate, currency, avatar, archived, createdAt }
       entries: {},         // { "YYYY-MM-DD": [{ projectId, hours }] }
       deductions: [],      // { id, name, value, type: "percent" | "fixed" }
+      monthly: {},         // { "YYYY-MM": { commission, commissionCurrency, payments, paymentsCurrency, extraHours: { projectId: hours } } }
       deductionsCurrency: "USD",
       currency: "USD",     // billing currency
       taxesDone: false,    // onboarding step 2
@@ -163,15 +164,34 @@
         totalHours += e.hours;
       });
     });
-    const rows = [...per.values()].sort((a, b) => b.amount - a.amount || b.hours - a.hours);
-    const gross = rows.reduce((s, r) => s + r.amount, 0);
-    const deductions = state.deductions.map((d) => {
-      const amount = d.type === "percent" ? (gross * d.value) / 100 : convert(d.value, state.deductionsCurrency, state.currency);
-      const pct = d.type === "percent" ? d.value : gross ? (amount / gross) * 100 : 0;
-      return { deduction: d, amount, pct };
+    // Extra hours (Figma 321:54172): added to the project's hours, paid at its rate, no extra days.
+    const md = state.monthly[prefix] || {};
+    Object.entries(md.extraHours || {}).forEach(([id, h]) => {
+      const p = project(id);
+      if (!p || !(h > 0)) return;
+      const row = per.get(p.id) || { project: p, hours: 0, days: 0, amount: 0 };
+      row.hours += h;
+      row.extraHours = (row.extraHours || 0) + h;
+      row.amount += convert(h * p.rate, p.currency, state.currency);
+      per.set(p.id, row);
+      totalHours += h;
     });
+    const rows = [...per.values()].sort((a, b) => b.amount - a.amount || b.hours - a.hours);
+    // Extra payments (321:54200): part of the month's total amount, so percentage deductions apply to them too.
+    const payments = (md.payments || []).map((pm) => ({ payment: pm, amount: convert(pm.value, md.paymentsCurrency || state.currency, state.currency) }));
+    const gross = rows.reduce((s, r) => s + r.amount, 0) + payments.reduce((s, pm) => s + pm.amount, 0);
+    const deduct = (d, cur, kind) => {
+      const amount = d.type === "percent" ? (gross * d.value) / 100 : convert(d.value, cur, state.currency);
+      const pct = d.type === "percent" ? d.value : gross ? (amount / gross) * 100 : 0;
+      return { deduction: d, amount, pct, kind };
+    };
+    // Deductions apply every month; commission (321:54144) only to this one.
+    const deductions = [
+      ...state.deductions.map((d) => deduct(d, state.deductionsCurrency, "global")),
+      ...(md.commission || []).map((d) => deduct(d, md.commissionCurrency || state.currency, "month")),
+    ];
     const net = gross - deductions.reduce((s, d) => s + d.amount, 0);
-    return { rows, per, gross, hours: totalHours, days, deductions, net };
+    return { rows, per, payments, gross, hours: totalHours, days, deductions, net };
   }
 
   function projectMonth(p, view) {
@@ -181,6 +201,7 @@
   function projectAllTime(p) {
     let h = 0;
     Object.values(state.entries).forEach((list) => list.forEach((e) => { if (e.projectId === p.id) h += e.hours; }));
+    Object.values(state.monthly).forEach((m) => { h += (m.extraHours && m.extraHours[p.id]) || 0; });
     return { hours: h, amount: h * p.rate };
   }
 
@@ -202,6 +223,7 @@
   }
   function deleteProject(id) {
     state.projects = state.projects.filter((p) => p.id !== id);
+    Object.values(state.monthly).forEach((m) => { if (m.extraHours) delete m.extraHours[id]; });
     Object.keys(state.entries).forEach((k) => {
       state.entries[k] = state.entries[k].filter((e) => e.projectId !== id);
       if (!state.entries[k].length) delete state.entries[k];
@@ -230,8 +252,17 @@
     const prefix = prefixOf(view);
     const keys = Object.keys(state.entries).filter((k) => k.startsWith(prefix));
     keys.forEach((k) => delete state.entries[k]);
+    const hadExtras = !!state.monthly[prefix];
+    delete state.monthly[prefix]; // extra hours, payments and commission of that month go too
     commit("entries", { keys });
-    return keys.length;
+    return keys.length + (hadExtras ? 1 : 0);
+  }
+
+  const monthData = (view) => state.monthly[prefixOf(view)] || {};
+  function setMonthly(view, patch) {
+    const k = prefixOf(view);
+    state.monthly[k] = Object.assign({}, state.monthly[k], patch);
+    commit("monthly");
   }
 
   function setDeductions(list, cur) {
@@ -260,6 +291,7 @@
       fmt: { number, hours }, keyOf, prefixOf, uid,
       project, active, archived, dayEntries, month, projectMonth, projectAllTime, onboardingStep,
       addProject, updateProject, archiveProject, deleteProject, setHours, removeFromDays, clearMonth, setDeductions, set,
+      monthData, setMonthly,
     },
   });
 })();

@@ -81,12 +81,12 @@
           </div>
 
           <!-- Extra actions button · Figma 18:5882 (Normal / Hover / Press), points and tooltips · 97:1985.
-               --i is the fly-out order: bottom first, then middle, then top. D-009: actions skipped -->
+               --i is the fly-out order: bottom first, then middle, then top. Each opens its modal (321:54140). -->
           <div class="extra" id="extra" data-open="false">
             <span class="extra__glow" aria-hidden="true"></span>
-            <button class="extra__point" data-tip="left" type="button" tabindex="-1" aria-label="Commission" style="--i:0;--x:-70px;--y:-13px"><span class="extra__tip" aria-hidden="true">Commission</span><span class="extra__btn"><img src="assets/bill-2.svg" alt=""></span></button>
-            <button class="extra__point" data-tip="corner" type="button" tabindex="-1" aria-label="Extra hours" style="--i:1;--x:-60px;--y:-55px"><span class="extra__tip" aria-hidden="true">Extra hours</span><span class="extra__btn"><img src="assets/time-duration.svg" alt=""></span></button>
-            <button class="extra__point" data-tip="top" type="button" tabindex="-1" aria-label="Extra payments" style="--i:2;--x:-21px;--y:-72px"><span class="extra__tip" aria-hidden="true">Extra payments</span><span class="extra__btn"><img src="assets/currency-dollar.svg" alt=""></span></button>
+            <button class="extra__point" data-tip="left" data-action="commission" type="button" tabindex="-1" aria-label="Commission" style="--i:0;--x:-70px;--y:-13px"><span class="extra__tip" aria-hidden="true">Commission</span><span class="extra__btn"><img src="assets/bill-2.svg" alt=""></span></button>
+            <button class="extra__point" data-tip="corner" data-action="extraHours" type="button" tabindex="-1" aria-label="Extra hours" style="--i:1;--x:-60px;--y:-55px"><span class="extra__tip" aria-hidden="true">Extra hours</span><span class="extra__btn"><img src="assets/time-duration.svg" alt=""></span></button>
+            <button class="extra__point" data-tip="top" data-action="payments" type="button" tabindex="-1" aria-label="Extra payments" style="--i:2;--x:-21px;--y:-72px"><span class="extra__tip" aria-hidden="true">Extra payments</span><span class="extra__btn"><img src="assets/currency-dollar.svg" alt=""></span></button>
             <button class="extra__blob" type="button" id="extra-toggle" aria-expanded="false" aria-label="Extra actions">
               <img class="extra__blob-img" src="assets/extra-blob.png" alt="">
               <img class="extra__icon" data-icon="add" src="assets/add.svg" alt="">

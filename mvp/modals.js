@@ -1,6 +1,7 @@
-/* prod.rec MVP · modals · Figma 292:107695.
+/* prod.rec MVP · modals · Figma 292:107695 and 321:54140.
    New project (292:99846), Edit project (292:106995), Deductions (292:107589),
-   history confirmation (292:107376, reusable for any confirmation). Needs store.js, ui.js. */
+   history confirmation (292:107376, reusable for any confirmation),
+   Commission (321:54144), Extra hours (321:54172), Extra payments (321:54200). Needs store.js, ui.js. */
 (function () {
   "use strict";
 
@@ -238,36 +239,42 @@
     });
   }
 
-  /* ───── Deductions · onboarding step 2 and the Taxes pencil ───── */
+  /* ───── Sum lists: Deductions (292:107589), Commission (321:54144), Extra payments (321:54200) ─────
+     One form, three configs. `typed` adds the % / $ segmented control; without it every row is a sum. */
 
-  function deductionsModal() {
+  const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const monthBadge = (view) => `<span class="month-badge">${MONTHS[view.getMonth()]}</span>`;
+
+  function listModal(cfg) {
+    const blankRow = () => ({ id: store.uid(), name: "", value: "", type: cfg.typed ? "percent" : "fixed" });
     const draft = {
-      currency: store.state.deductionsCurrency || store.state.currency,
-      rows: store.state.deductions.length
-        ? store.state.deductions.map((d) => ({ ...d }))
-        : [{ id: store.uid(), name: "", value: "", type: "percent" }],
+      currency: cfg.currency,
+      rows: cfg.rows.length ? cfg.rows.map((d) => ({ ...d, value: String(d.value) })) : [blankRow()],
     };
 
     const el = document.createElement("div");
     el.setAttribute("aria-labelledby", "dd-title");
     el.innerHTML = `
       <div class="modal__head">
-        <div class="modal__titles">
-          <h2 class="modal__h" id="dd-title">Deductions</h2>
-          <p class="modal__sub">Enter it once — it applies to every month.</p>
+        <div class="modal__titles${cfg.view ? " modal__titles--badge" : ""}">
+          ${cfg.view ? monthBadge(cfg.view) : ""}
+          <div class="modal__titles">
+            <h2 class="modal__h" id="dd-title">${esc(cfg.title)}</h2>
+            <p class="modal__sub">${esc(cfg.subtitle)}</p>
+          </div>
         </div>
         <div class="cur dd-cur">
-          <button class="currency" type="button" aria-label="Currency for fixed sums"><span class="t-text-swap dd-cur__code">${draft.currency}</span><img src="assets/selector-vertical.svg" alt=""></button>
+          <button class="currency" type="button" aria-label="Currency for sums"><span class="t-text-swap dd-cur__code">${draft.currency}</span><img src="assets/selector-vertical.svg" alt=""></button>
           ${ui.pickerMarkup("dd-cur__pop")}
         </div>
       </div>
       ${separator}
       <div class="dd-form">
-        <div class="dd-rows"></div>
+        <div class="dd-rows${cfg.typed ? "" : " dd-rows--sums"}"></div>
         <button class="dd-add" type="button"><img src="assets/add-20-pink.svg" alt="" width="20" height="20"><span>Add another</span></button>
       </div>
       ${separator}
-      <p class="modal__note">Percentages are calculated from the total amount. Fixed sums are charged once per month, even in a month with no work.</p>
+      <p class="modal__note">${esc(cfg.note)}</p>
       <div class="modal__foot">
         <button class="ds-btn" data-type="secondary" data-size="lg" type="button" data-close>Close</button>
         <button class="ds-btn" data-size="lg" type="button" id="dd-save">Save</button>
@@ -279,17 +286,19 @@
 
     function rowMarkup(r) {
       const unit = r.type === "percent" ? "%" : symbol();
+      const type = cfg.typed ? `
+          <div class="ds-segmented dd-type" data-size="lg" aria-label="Type">
+            <button class="ds-segmented__item" type="button" data-value="percent" aria-checked="${r.type === "percent"}" data-ds-tooltip="Percent of total">%</button>
+            <button class="ds-segmented__item dd-type__fixed" type="button" data-value="fixed" aria-checked="${r.type === "fixed"}" data-ds-tooltip="Fixed sum per month">${esc(symbol())}</button>
+          </div>` : "";
       return `
         <div class="dd-row" data-id="${r.id}">
-          ${field({ id: `dd-name-${r.id}`, placeholder: "Category name", value: r.name })}
+          ${field({ id: `dd-name-${r.id}`, placeholder: cfg.placeholder, value: r.name })}
           <label class="dd-value">
             <input class="dd-value__input" type="text" inputmode="decimal" placeholder="0" value="${esc(r.value)}" aria-label="Amount">
             <span class="dd-value__unit t-text-swap" aria-hidden="true">${esc(unit)}</span>
           </label>
-          <div class="ds-segmented dd-type" data-size="lg" aria-label="Type">
-            <button class="ds-segmented__item" type="button" data-value="percent" aria-checked="${r.type === "percent"}" data-ds-tooltip="Percent of total">%</button>
-            <button class="ds-segmented__item dd-type__fixed" type="button" data-value="fixed" aria-checked="${r.type === "fixed"}" data-ds-tooltip="Fixed sum per month">${esc(symbol())}</button>
-          </div>
+          ${type}
           <button class="ds-icon-btn dd-remove" data-type="secondary" data-variant="link" type="button" aria-label="Remove"><img src="assets/close-14-muted.svg" alt="" width="14" height="14"></button>
         </div>`;
     }
@@ -324,11 +333,11 @@
       row.classList.add("is-leaving");
       setTimeout(() => {
         row.remove();
-        if (!draft.rows.length) { draft.rows.push({ id: store.uid(), name: "", value: "", type: "percent" }); renderRows(); }
+        if (!draft.rows.length) { draft.rows.push(blankRow()); renderRows(); }
       }, ui.cssMs("--duration-medium"));
     });
     $(".dd-add").addEventListener("click", () => {
-      const r = { id: store.uid(), name: "", value: "", type: "percent" };
+      const r = blankRow();
       draft.rows.push(r);
       rowsEl.insertAdjacentHTML("beforeend", rowMarkup(r));
       const row = rowsEl.lastElementChild;
@@ -357,8 +366,8 @@
       const list = draft.rows
         .map((r) => ({ id: r.id, name: r.name.trim(), value: parseNum(r.value), type: r.type }))
         .filter((r) => Number.isFinite(r.value) && r.value > 0)
-        .map((r) => ({ ...r, name: r.name || (r.type === "percent" ? "Taxes" : "Fee"), value: r.type === "percent" ? Math.min(r.value, 100) : r.value }));
-      store.setDeductions(list, draft.currency);
+        .map((r) => ({ ...r, name: r.name || cfg.fallbackName(r), value: r.type === "percent" ? Math.min(r.value, 100) : r.value }));
+      cfg.save(list, draft.currency);
       ui.closeModal();
     });
 
@@ -366,7 +375,140 @@
     ui.openModal(el, { initialFocus: ".dd-row .ds-field__input" });
   }
 
+  function deductionsModal() {
+    listModal({
+      title: "Deductions",
+      subtitle: "Enter it once — it applies to every month.",
+      note: "Percentages are calculated from the total amount. Fixed sums are charged once per month, even in a month with no work.",
+      placeholder: "Category name",
+      typed: true,
+      currency: store.state.deductionsCurrency || store.state.currency,
+      rows: store.state.deductions,
+      fallbackName: (r) => (r.type === "percent" ? "Taxes" : "Fee"),
+      save: (list, cur) => store.setDeductions(list, cur),
+    });
+  }
+
+  function commissionModal(view) {
+    const m = store.monthData(view);
+    listModal({
+      view,
+      title: "Commission",
+      subtitle: "Extra costs for this month only. They don't carry over.",
+      note: `Applies to ${MONTHS[view.getMonth()]} only. Percentages are taken from that month's total amount.`,
+      placeholder: "Expense name",
+      typed: true,
+      currency: m.commissionCurrency || store.state.currency,
+      rows: m.commission || [],
+      fallbackName: () => "Commission",
+      save: (list, cur) => store.setMonthly(view, { commission: list, commissionCurrency: cur }),
+    });
+  }
+
+  function paymentsModal(view) {
+    const m = store.monthData(view);
+    listModal({
+      view,
+      title: "Extra payments",
+      subtitle: "Bonuses and other one-off income for this month.",
+      note: `Added to ${MONTHS[view.getMonth()]}'s total amount, on top of your hours.`,
+      placeholder: "Payment name",
+      typed: false,
+      currency: m.paymentsCurrency || store.state.currency,
+      rows: m.payments || [],
+      fallbackName: () => "Extra payment",
+      save: (list, cur) => store.setMonthly(view, { payments: list, paymentsCurrency: cur }),
+    });
+  }
+
+  /* ───── Extra hours · Figma 321:54172: hours per project for one month, all start at 0 ───── */
+
+  function extraHoursModal(view) {
+    const projects = store.active();
+    const saved = store.monthData(view).extraHours || {};
+    const draft = new Map(projects.map((p) => [p.id, Number(saved[p.id]) || 0]));
+    const clamp = (v) => Math.min(999, Math.max(0, Math.round(v * 2) / 2));
+
+    const el = document.createElement("div");
+    el.setAttribute("aria-labelledby", "eh-title");
+    el.innerHTML = `
+      <div class="modal__head modal__head--stack">
+        <div class="modal__titlerow">
+          <h2 class="modal__h" id="eh-title">Extra hours</h2>
+          ${monthBadge(view)}
+        </div>
+        <p class="modal__sub">Hours that don't sit on a calendar day. All start at 0.</p>
+      </div>
+      ${separator}
+      <div class="eh-rows">
+        ${projects.length ? projects.map((p) => `
+          <div class="hrow eh-row" data-id="${p.id}">
+            <div class="hrow__name"><img class="hrow__avatar" src="${ui.avatarSrc(p.avatar)}" alt=""><span class="hrow__label">${esc(p.name)}</span></div>
+            <div class="hstep">
+              <button class="ds-icon-btn" data-type="secondary" type="button" data-step="-1" aria-label="Fewer hours for ${esc(p.name)}"><img src="assets/arrow-left-14.svg" alt="" width="14" height="14"></button>
+              <label class="hstep__value"><input class="hstep__input" type="text" inputmode="decimal" autocomplete="off" aria-label="Extra hours for ${esc(p.name)}"><span aria-hidden="true">h.</span></label>
+              <button class="ds-icon-btn" data-type="secondary" type="button" data-step="1" aria-label="More hours for ${esc(p.name)}"><img src="assets/arrow-right-14.svg" alt="" width="14" height="14"></button>
+            </div>
+          </div>`).join("") : `<p class="modal__text">No active projects yet. Add a project to give it extra hours.</p>`}
+      </div>
+      ${separator}
+      <p class="modal__note">Added to each project's hours in ${MONTHS[view.getMonth()]} and paid at its hour rate.</p>
+      <div class="modal__foot">
+        <button class="ds-btn" data-type="secondary" data-size="lg" type="button" data-close>Close</button>
+        <button class="ds-btn" data-size="lg" type="button" id="eh-save"${projects.length ? "" : " disabled"}>Save</button>
+      </div>`;
+
+    const rows = el.querySelector(".eh-rows");
+    function paint(row, dir) {
+      const v = draft.get(row.dataset.id);
+      const input = row.querySelector(".hstep__input");
+      input.value = store.fmt.hours(v);
+      row.querySelector("[data-step='-1']").disabled = v <= 0;
+      row.toggleAttribute("data-selected", v > 0);
+      if (dir) {
+        // transitions.dev 02 · number pop-in, direction follows the arrow.
+        input.style.setProperty("--digit-dir-y", "0");
+        input.style.setProperty("--digit-dir-x", String(dir));
+        input.classList.remove("is-bump");
+        void input.offsetWidth;
+        input.classList.add("is-bump");
+      }
+    }
+    const set = (row, v, dir) => { draft.set(row.dataset.id, clamp(v)); paint(row, dir); };
+    rows.querySelectorAll(".eh-row").forEach((row) => paint(row));
+    rows.addEventListener("click", (e) => {
+      const step = e.target.closest("[data-step]");
+      if (!step) return;
+      const row = step.closest(".eh-row");
+      set(row, draft.get(row.dataset.id) + Number(step.dataset.step), Number(step.dataset.step));
+    });
+    rows.addEventListener("change", (e) => {
+      if (!e.target.matches(".hstep__input")) return;
+      const row = e.target.closest(".eh-row");
+      const v = parseNum(e.target.value);
+      set(row, Number.isFinite(v) ? v : draft.get(row.dataset.id), 0);
+    });
+    rows.addEventListener("keydown", (e) => {
+      if (!e.target.matches(".hstep__input")) return;
+      const row = e.target.closest(".eh-row");
+      if (e.key === "ArrowUp") { e.preventDefault(); set(row, draft.get(row.dataset.id) + 1, 1); }
+      if (e.key === "ArrowDown") { e.preventDefault(); set(row, draft.get(row.dataset.id) - 1, -1); }
+      if (e.key === "Enter") { e.preventDefault(); e.target.blur(); }
+    });
+
+    el.querySelector("#eh-save").addEventListener("click", () => {
+      // Commit a value still being typed.
+      if (document.activeElement && document.activeElement.matches(".hstep__input")) document.activeElement.blur();
+      const extraHours = {};
+      draft.forEach((v, id) => { if (v > 0) extraHours[id] = v; });
+      store.setMonthly(view, { extraHours });
+      ui.closeModal();
+    });
+
+    ui.openModal(el, { initialFocus: ".hstep__input" });
+  }
+
   window.PR = Object.assign(window.PR, {
-    modals: { project: projectModal, deductions: deductionsModal, requestDelete, confirmArchivedDelete },
+    modals: { project: projectModal, deductions: deductionsModal, commission: commissionModal, payments: paymentsModal, extraHours: extraHoursModal, requestDelete, confirmArchivedDelete },
   });
 })();

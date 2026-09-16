@@ -601,13 +601,18 @@
     document.querySelectorAll("[data-cur-symbol]").forEach((el) => ui.swapText(el, sym(), animate));
 
     // Projects with hours in this month. All area is clickable for copy (annotation 288:40251).
-    fold($("#bill-projects-fold"), !m.rows.length, animate);
+    fold($("#bill-projects-fold"), !m.rows.length && !m.payments.length, animate);
     const seen = new Map([...billProjects.children].map((n) => [n.dataset.id, n]));
-    m.rows.forEach((row) => {
-      let node = seen.get(row.project.id);
+    // Project rows, then extra payments of this month (Figma 321:54200) in the same list.
+    const lines = [
+      ...m.rows.map((r) => ({ id: r.project.id, name: r.project.name, amount: r.amount })),
+      ...m.payments.map((pm) => ({ id: `pay-${pm.payment.id}`, name: pm.payment.name, amount: pm.amount })),
+    ];
+    lines.forEach((row) => {
+      let node = seen.get(row.id);
       if (!node) {
         billProjects.insertAdjacentHTML("beforeend", `
-          <button class="receipt__proj" type="button" data-id="${row.project.id}">
+          <button class="receipt__proj" type="button" data-id="${ui.esc(row.id)}">
             <span class="receipt__pname"></span>
             <span class="receipt__pamount">
               <span class="copy-swap" data-state="copy" aria-hidden="true"><img data-icon="copy" src="assets/copy.svg" alt="" width="16" height="16"><img data-icon="done" src="assets/check-circle.svg" alt="" width="16" height="16"></span>
@@ -616,11 +621,11 @@
           </button>`);
         node = billProjects.lastElementChild;
       }
-      seen.delete(row.project.id);
+      seen.delete(row.id);
       billProjects.appendChild(node);
-      node.querySelector(".receipt__pname").textContent = row.project.name;
+      node.querySelector(".receipt__pname").textContent = row.name;
       node.dataset.copy = row.amount.toFixed(2);
-      node.setAttribute("aria-label", `Copy ${row.project.name}: ${sym()}${store.fmt.number(row.amount)}`);
+      node.setAttribute("aria-label", `Copy ${row.name}: ${sym()}${store.fmt.number(row.amount)}`);
       ui.setNumber(node.querySelector(".receipt__pnum"), store.fmt.number(row.amount), animate);
     });
     seen.forEach((node) => node.remove());
@@ -629,7 +634,9 @@
     ui.setNumber($("#bill-total"), store.fmt.number(m.gross), animate);
 
     // No deductions yet → the empty design's "Taxes 0% -$0" row, still editable.
-    const rows = m.deductions.length ? m.deductions : [{ deduction: { id: "none", name: "Taxes" }, amount: 0, pct: 0 }];
+    const rows = m.deductions.some((d) => d.kind === "global")
+      ? m.deductions
+      : [{ deduction: { id: "none", name: "Taxes" }, amount: 0, pct: 0, kind: "global" }, ...m.deductions];
     const known = new Map([...billDeductions.children].map((n) => [n.dataset.id, n]));
     rows.forEach((d, i) => {
       let node = known.get(d.deduction.id);
@@ -647,10 +654,13 @@
       known.delete(d.deduction.id);
       billDeductions.appendChild(node);
       node.querySelector(".receipt__dname").textContent = d.deduction.name;
+      // A pencil on the first row of each group: deductions for every month, commission for this one.
       const label = node.querySelector(".receipt__label");
       const edit = label.querySelector(".receipt__edit");
-      if (i === 0 && !edit) label.insertAdjacentHTML("beforeend", `<button class="receipt__edit" type="button" aria-label="Edit deductions" data-ds-tooltip="Edit deductions"><img src="assets/pencil.svg" alt="" width="16" height="16"></button>`);
-      if (i !== 0 && edit) edit.remove();
+      const firstOfKind = rows.findIndex((x) => x.kind === d.kind) === i;
+      const tip = d.kind === "month" ? "Edit commission" : "Edit deductions";
+      if (edit && (!firstOfKind || edit.dataset.edit !== d.kind)) edit.remove();
+      if (firstOfKind && !label.querySelector(".receipt__edit")) label.insertAdjacentHTML("beforeend", `<button class="receipt__edit" type="button" data-edit="${d.kind}" aria-label="${tip}" data-ds-tooltip="${tip}"><img src="assets/pencil.svg" alt="" width="16" height="16"></button>`);
       ui.setNumber(node.querySelector(".receipt__dpct"), String(Math.round(d.pct * 100) / 100), animate);
       ui.setNumber(node.querySelector(".receipt__damount"), store.fmt.number(d.amount), animate);
     });
@@ -669,7 +679,12 @@
     clearTimeout(btn._copyTimer);
     btn._copyTimer = setTimeout(() => { swap.dataset.state = "copy"; }, 1400);
   });
-  billDeductions.addEventListener("click", (e) => { if (e.target.closest(".receipt__edit")) modals.deductions(); });
+  billDeductions.addEventListener("click", (e) => {
+    const edit = e.target.closest(".receipt__edit");
+    if (!edit) return;
+    if (edit.dataset.edit === "month") modals.commission(view);
+    else modals.deductions();
+  });
 
   /* ───── Extra actions ───── */
 
@@ -684,6 +699,13 @@
     if (!open && extra.contains(document.activeElement) && document.activeElement !== toggle) toggle.focus({ preventScroll: true });
   }
   toggle.addEventListener("click", () => setExtra(extra.dataset.open !== "true"));
+  // Each point opens its modal for the month on screen · Figma 321:54140.
+  extra.addEventListener("click", (e) => {
+    const point = e.target.closest(".extra__point[data-action]");
+    if (!point) return;
+    setExtra(false);
+    modals[point.dataset.action](view);
+  });
 
   /* ───── Dismissal ───── */
 
