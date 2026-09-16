@@ -656,7 +656,9 @@ body {
 .receipt__label[data-tone="muted"] { font: var(--ts-body-lg-regular); color: var(--text-secondary-foreground); }
 .receipt__label[data-tone="plain"] { font: var(--ts-body-lg-regular); }
 .receipt__total, .receipt__tax { display: flex; align-items: center; gap: 12px; }
-.receipt__amount { font: var(--ts-headline-h4-semibold); }
+/* Hardcoded 22px, not a DS size: h4's 24px reads too large in the receipt (Illia, 2026-09-16).
+   Line height stays h4's, so the row keeps its height. */
+.receipt__amount { font: var(--ts-headline-h4-semibold); font-size: 22px; }
 .receipt__value { font: var(--ts-body-lg-regular); }
 .receipt__net { font: var(--ts-headline-h6-semibold); }
 .receipt__sep { display: block; inline-size: 100%; block-size: 1px; margin-block: -0.5px; }
