@@ -1094,10 +1094,7 @@ body {
   flex: 1;
   min-inline-size: 0;
   overflow: hidden;
-  background: linear-gradient(169deg, var(--color-pink-600), var(--color-pink-800));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--text-primary);
   font: var(--ts-body-lg-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
