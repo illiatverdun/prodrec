@@ -1230,6 +1230,210 @@ body {
   .barcode__bars { justify-content: center; }
 }
 
+/* ───── Mobile · Figma 277:42013 (empty), 288:39208 / 288:39090 (calendar, 5 / 7 days), 288:40202 (billing) ─────
+   A summary card under the header, then one tab at a time, switched by the Nav bar.
+   No Projects section and no footer: projects are added and edited from the day drawer. */
+
+.sum, .tabs { display: none; }
+
+@media (max-width: 645px) {
+  .page { padding-block-end: calc(102px + env(safe-area-inset-bottom)); }
+
+  .hdr { block-size: 50px; padding: 8px 16px; background: var(--bg-card); }
+  .logo__word { display: none; }
+  .logo__mark {
+    inline-size: 34px;
+    block-size: 34px;
+    padding: 3px;
+    border: 0.85px solid var(--border-subtle-20);
+    border-radius: 10px;
+    background: linear-gradient(153deg, var(--bg-background) 17%, var(--color-pink-50));
+  }
+
+  /* Summary · 277:42016 */
+  .sum {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 24px 24px;
+    border-radius: 0 0 32px 32px;
+    background: var(--bg-card);
+    box-shadow: var(--effect-popover-shadow-soft);
+    overflow: hidden;
+    animation: air-rise 700ms var(--air-ease) backwards;
+    animation-delay: 70ms;
+  }
+  .sum__bg { position: absolute; right: -19px; top: 64px; inline-size: 159px; block-size: 127px; rotate: -17.36deg; pointer-events: none; }
+  .sum__lines { position: relative; display: flex; flex-direction: column; gap: 6px; }
+  .sum__line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font: var(--ts-headline-h5-semibold); color: var(--text-primary); }
+  .sum__line--projects { gap: 16px; }
+  .sum__muted { color: var(--text-tertiary); }
+  .sum__fig { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .sum__icon { display: block; inline-size: 24px; block-size: 24px; margin: 2px; rotate: var(--tilt, 0deg); }
+  .sum__avatars { display: flex; align-items: center; }
+  .sum__avatar {
+    display: block;
+    inline-size: 20px;
+    block-size: 20px;
+    margin: 2px -6px 2px 0;
+    border: 1px solid var(--bg-card);
+    border-radius: 6px;
+    object-fit: cover;
+    rotate: -6deg;
+  }
+  .sum__avatar:nth-child(2) { rotate: 2deg; }
+  .sum__avatar:nth-child(3) { rotate: -12deg; }
+  .sum__avatar:last-child { margin-inline-end: 0; }
+  .chip.sum__empty { block-size: 24px; padding: 2px 8px; border-radius: 10px; background: var(--color-gray-200); font: var(--ts-body-sm-regular); white-space: nowrap; }
+  .sum__empty[hidden] { display: none; }
+  /* Dashed separator, Figma dash 6 / gap 6. */
+  .sum__sep { position: relative; block-size: 1px; background: linear-gradient(90deg, var(--color-gray-300) 50%, transparent 0) 0 0 / 12px 1px repeat-x; }
+  .sum__meta { position: relative; margin: 0; font: var(--ts-body-sm-regular); color: var(--text-tertiary); }
+  .sum:has(> #onb-fold[data-folded]) .sum__sep--onb { display: none; }
+  .sum > #onb-fold { order: 0; } /* the tablet rule puts it first */
+  .sum > #onb-fold[data-folded] { margin-block-start: -12px; }
+
+  /* Onboarding inside the summary card: no card of its own and no title. */
+  .sum .onb { display: flex; flex-direction: column; gap: 12px; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  .sum .onb .card__title { display: none; }
+  .sum .onb__cta[data-folded] { margin-block-start: -12px; }
+
+  /* One tab at a time */
+  .main { padding: 0; }
+  .board { inline-size: 100%; gap: 0; }
+  #proj-fold, .foot { display: none; }
+  html[data-tab="billing"] .cal,
+  html[data-tab="calendar"] .bill,
+  html[data-tab="calendar"] .extra { display: none; }
+
+  /* Calendar tab · 288:39239: title row, then a full-width navigation row. */
+  .cal { inline-size: auto; padding: 24px 16px; border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
+  .cal-head { flex-wrap: wrap; block-size: auto; gap: 16px; }
+  .cal-head__actions { display: contents; }
+  .cal-title__meta { display: none; }
+  .menu { order: 1; }
+  .cal-nav { order: 2; flex: 1 0 100%; }
+  .cal-nav #today { flex: 1; }
+  .cal-icon { zoom: calc(50 / 60); } /* 50px icon on mobile */
+
+  /* Days · 5 days: 67px squares, 7 days: 47×64; 2px gaps both ways. */
+  .days { margin-block-start: 16px; }
+  .days__head,
+  .days__grid,
+  .days[data-week="7"] .days__head,
+  .days[data-week="7"] .days__grid { grid-template-columns: repeat(var(--cols, 5), 1fr); gap: 2px; }
+  .days[data-week="7"] { --cols: 7; }
+  .days__grid { grid-auto-rows: auto; }
+  .days[data-week="7"] .days__grid { grid-auto-rows: 64px; }
+  .day { block-size: auto; aspect-ratio: 1; border-radius: 12px; }
+  .days[data-week="7"] .day { aspect-ratio: auto; }
+  .day__card { padding: 8px; border-radius: 8px; }
+  .days[data-week="7"] .day__card { padding: 6px; }
+  .day__num, .day[data-today] .day__num { font-size: 12px; line-height: 20px; }
+  .day__avatar, .days[data-week="7"] .day__avatar { inline-size: 16px; block-size: 16px; border-radius: 4px; }
+
+  /* Billing tab · 288:40233: the month title and currency on top, the receipt without its card. */
+  .side .bill { gap: 24px; padding: 24px 16px; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  .bill .card__title { gap: 16px; padding: 0; }
+  .bill .card__title h2 { display: none; }
+  .receipt { margin: 0; filter: none; }
+  .receipt__body { padding: 0 8px; background: none; }
+  .receipt__edge { display: none; }
+  /* Annotation 288:40288: one clickable box for the deductions. */
+  #bill-deductions { gap: 8px; margin-inline: -8px; padding: 10px 8px; border: 1px solid var(--border-subtle-20); border-radius: 12px; background: var(--bg-card); cursor: pointer; }
+
+  /* Extra actions · 292:83319: the blob sits on the Nav bar; points stack above it with labels. */
+  .extra { position: fixed; inset-inline-end: 16px; inset-block-end: calc(98px + env(safe-area-inset-bottom)); z-index: 60; inline-size: 80px; block-size: 80px; }
+  /* Figma keeps a bg-card panel (I292:83319;288:74325) behind the open points; here it covers the screen. */
+  .extra__glow {
+    position: fixed;
+    inset: 0;
+    inline-size: auto;
+    block-size: auto;
+    background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+  }
+  .extra:is(:hover, :focus-within) .extra__glow { opacity: 0; }
+  .extra[data-open="true"] .extra__glow { opacity: 1; pointer-events: auto; } /* a tap on it closes the menu, not the row under it */
+  .extra__blob,
+  .extra:is(:hover, :focus-within, [data-open="true"]) .extra__blob { left: 0; top: 0; translate: none; }
+  .extra__icon,
+  .extra:is(:hover, :focus-within, [data-open="true"]) .extra__icon { left: 27px; top: 26px; translate: none; }
+  .extra__point {
+    left: auto;
+    right: 16px;
+    top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    inline-size: auto;
+    block-size: 48px;
+  }
+  .extra:is(:hover, :focus-within) .extra__point { translate: none; }
+  .extra[data-open="true"] .extra__point { translate: 16px calc((var(--i) + 1) * -60px); }
+  .extra__btn {
+    order: 1;
+    inline-size: 48px;
+    block-size: 48px;
+    border: 1px solid var(--border-subtle-20);
+    border-radius: 16px;
+    background: var(--bg-background);
+    box-shadow: var(--effect-popover-shadow-hard);
+  }
+  .extra__btn img { inline-size: 24px; block-size: 24px; }
+  .extra__point .extra__tip,
+  .extra[data-open="true"] .extra__point:is(:hover, :focus-visible) .extra__tip {
+    position: static;
+    padding: 0;
+    border: 0;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    color: var(--text-primary);
+    font: var(--ts-body-md-medium);
+    opacity: 1;
+    scale: 1;
+    translate: none;
+  }
+
+  /* Nav bar · 292:84733 */
+  .tabs {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: 70;
+    display: flex;
+    padding: 16px 24px calc(24px + env(safe-area-inset-bottom));
+    pointer-events: none;
+  }
+  .tabs__bar { display: flex; flex: 1; padding: 4px; border-radius: 999px; background: var(--bg-card); box-shadow: var(--effect-popover-shadow-soft); pointer-events: auto; }
+  .tabs__item {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 20px;
+    border: 0;
+    border-radius: 999px;
+    background: none;
+    color: var(--text-secondary);
+    font: var(--ts-body-sm-semibold);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color var(--duration-quick) var(--ease-smooth-out), color var(--duration-quick) var(--ease-smooth-out);
+  }
+  .tabs__item[aria-selected="true"] { background: var(--bg-subtle); color: var(--text-accent); }
+  .tabs__item:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
+  .tabs__icon { inline-size: 24px; block-size: 24px; background: currentColor; -webkit-mask: var(--icon) center / 24px no-repeat; mask: var(--icon) center / 24px no-repeat; }
+  .tabs__icon[data-icon="calendar"] { --icon: url("assets/nav-calendar.svg"); }
+  .tabs__icon[data-icon="billing"] { --icon: url("assets/nav-bill.svg"); }
+
+  /* Toasts sit above the Nav bar, full width. */
+  .ds-toast-region { inset-inline: 16px; inset-block-end: calc(110px + env(safe-area-inset-bottom)); justify-items: stretch; }
+  .ds-toast.toast { min-inline-size: 0; }
+}
+
 /* ───── [?] Selection popover — not in Figma, DS tokens only ───── */
 
 .pop {

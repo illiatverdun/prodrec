@@ -17,6 +17,8 @@
   today.setHours(0, 0, 0, 0);
 
   let view = new Date(today.getFullYear(), today.getMonth(), 1);
+  // Mobile · Figma 277:42013: one column, tabs, summary card. Tablet stops at 646px (582 column + 32 + 32).
+  const mobile = window.matchMedia("(max-width: 645px)");
   const isCurrentMonth = (d) => d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
   const sym = () => store.currency(state.currency).symbol;
 
@@ -159,6 +161,7 @@
     renderGrid(dir, true);
     renderBilling(true);
     renderProjects(true);
+    renderSummary(true);
   }
 
   $("#prev").addEventListener("click", () => go(-1));
@@ -681,6 +684,7 @@
       }
       known.delete(d.deduction.id);
       billDeductions.appendChild(node);
+      node.dataset.kind = d.kind;
       node.querySelector(".receipt__dname").textContent = d.deduction.name;
       // A pencil on the first row of each group: deductions for every month, commission for this one.
       const label = node.querySelector(".receipt__label");
@@ -708,9 +712,10 @@
     btn._copyTimer = setTimeout(() => { swap.dataset.state = "copy"; }, 1400);
   });
   billDeductions.addEventListener("click", (e) => {
-    const edit = e.target.closest(".receipt__edit");
-    if (!edit) return;
-    if (edit.dataset.edit === "month") modals.commission(view);
+    // Mobile, annotation 288:40288: the whole deductions box is clickable; a commission row opens commission.
+    const target = e.target.closest(".receipt__edit") || (mobile.matches && e.target.closest(".receipt__row"));
+    if (!target) return;
+    if ((target.dataset.edit || target.dataset.kind) === "month") modals.commission(view);
     else modals.deductions();
   });
 
@@ -734,6 +739,97 @@
     setExtra(false);
     modals[point.dataset.action](view);
   });
+
+  /* ───── Mobile · Figma 277:42013 (empty), 288:39208 (calendar tab), 288:40202 (billing tab) ─────
+     The same nodes change slots: Onboarding moves into the summary card, the month title
+     follows the open tab, Extra actions leaves the calendar card for the Billing tab. */
+
+  const TAB_KEY = "prodrec.mvp.tab";
+  const onbFold = $("#onb-fold");
+  const calLead = $(".cal-head__lead");
+  let tab = "calendar";
+  try { if (localStorage.getItem(TAB_KEY) === "billing") tab = "billing"; } catch (e) { /* storage blocked */ }
+
+  function placeNodes() {
+    const m = mobile.matches;
+    if (m && onbFold.parentElement !== $("#sum")) $("#sum").appendChild(onbFold);
+    if (!m && onbFold.parentElement !== $(".side")) $(".side").prepend(onbFold);
+    const leadHome = m && tab === "billing" ? $(".bill .card__title") : $(".cal-head");
+    if (calLead.parentElement !== leadHome) leadHome.prepend(calLead);
+    const extraHome = m ? $(".page") : $(".cal");
+    if (extra.parentElement !== extraHome) extraHome.appendChild(extra);
+  }
+
+  function setTab(next, { save = true } = {}) {
+    tab = next;
+    document.documentElement.dataset.tab = tab;
+    document.querySelectorAll(".tabs__item").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
+    if (save) { try { localStorage.setItem(TAB_KEY, tab); } catch (e) { /* storage blocked */ } }
+    closeDayPopovers();
+    setMenu(false);
+    setExtra(false);
+    ui.closeFloats();
+    placeNodes();
+  }
+  $(".tabs").addEventListener("click", (e) => {
+    const item = e.target.closest(".tabs__item");
+    if (!item || item.dataset.tab === tab) return;
+    setTab(item.dataset.tab);
+    window.scrollTo({ top: 0 });
+  });
+  mobile.addEventListener("change", () => { setExtra(false); placeNodes(); });
+  $(".extra__glow").addEventListener("click", () => setExtra(false));
+
+  /* Summary card. [?] "still empty" counts working days before today with no hours
+     (weekends only when they are on); tax is the sum of percentage deductions, fee the fixed ones. */
+  function ago(ms) {
+    const min = Math.floor(ms / 60000);
+    if (min < 1) return "just now";
+    if (min < 60) return `${min} min ago`;
+    const h = Math.floor(min / 60);
+    return h < 24 ? `${h} h ago` : `${Math.floor(h / 24)} d ago`;
+  }
+  function emptyDays(v) {
+    if (v > today) return 0;
+    const last = isCurrentMonth(v) ? today.getDate() - 1 : new Date(v.getFullYear(), v.getMonth() + 1, 0).getDate();
+    let n = 0;
+    for (let i = 1; i <= last; i++) {
+      const d = new Date(v.getFullYear(), v.getMonth(), i);
+      if (!state.weekends && (d.getDay() === 0 || d.getDay() === 6)) continue;
+      if (!store.dayEntries(store.keyOf(d)).length) n++;
+    }
+    return n;
+  }
+  const plural = (n, one, many) => (n === 1 ? one : many);
+
+  function renderSummary(animate) {
+    const m = store.month(view);
+    $("#sum-net-sign").textContent = m.net < 0 ? "-" : "";
+    ui.setNumber($("#sum-net"), store.fmt.number(Math.round(Math.abs(m.net))), animate);
+    ui.swapText($("#sum-month"), MONTHS_LONG[view.getMonth()], animate);
+    ui.setNumber($("#sum-hours"), store.fmt.hours(m.hours), animate);
+    ui.setNumber($("#sum-days"), m.days, animate);
+    $("#sum-days-unit").textContent = plural(m.days, "day", "days");
+    const n = m.rows.length;
+    ui.setNumber($("#sum-projects"), n, animate);
+    $("#sum-projects-unit").textContent = plural(n, "project", "projects");
+    // Up to three avatars of this month's projects; the empty frame shows one neutral avatar.
+    $("#sum-avatars").innerHTML = (n ? m.rows.slice(0, 3).map((r) => r.project.avatar) : ["black"])
+      .map((a) => `<img class="sum__avatar" src="${ui.avatarSrc(a)}" alt="">`).join("");
+
+    const empty = m.days ? emptyDays(view) : 0;
+    const badge = $("#sum-empty");
+    badge.hidden = !empty;
+    if (empty) badge.textContent = `${empty} ${plural(empty, "day is", "days are")} still empty`;
+
+    const s = sym();
+    const pct = m.deductions.filter((d) => d.deduction.type === "percent").reduce((a, d) => a + d.deduction.value, 0);
+    const fee = m.deductions.filter((d) => d.deduction.type !== "percent").reduce((a, d) => a + d.amount, 0);
+    const parts = state.updatedAt ? [`Updated ${ago(Date.now() - state.updatedAt)}`] : [];
+    parts.push(`Σ ${s}${store.fmt.number(Math.round(m.gross))}`, `tax ${Math.round(pct * 100) / 100}%`, `fee ${s}${store.fmt.number(Math.round(fee))}`);
+    $("#sum-meta").textContent = parts.join(" · ");
+  }
+  setInterval(() => { if (mobile.matches) renderSummary(false); }, 60 * 1000);
 
   /* ───── Dismissal ───── */
 
@@ -767,6 +863,7 @@
     renderBilling(true);
     renderProjects(true);
     renderOnboarding(true);
+    renderSummary(true);
     if (hours) {
       if (!store.active().length) closeDayPopovers();
       else renderHours();
@@ -788,4 +885,6 @@
   renderOnboarding(false);
   renderProjects(false);
   renderBilling(false);
+  renderSummary(false);
+  setTab(tab, { save: false });
 })();

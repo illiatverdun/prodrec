@@ -24,10 +24,37 @@
       </button>
     </header>
 
+    <!-- Summary · mobile only, Figma 277:42016 (empty) and 288:39211 (filled).
+         Annotations 277:42019…42034: net profit, month, total hours, working days, projects this month.
+         On mobile Onboarding moves in here, after the second separator. -->
+    <section class="sum" id="sum" aria-label="Month summary">
+      <img class="sum__bg" src="assets/logo-bg.svg" alt="">
+      <div class="sum__lines">
+        <p class="sum__line">
+          <span class="sum__fig"><img class="sum__icon" style="--tilt:12deg" src="assets/summary-cash.svg" alt=""><span><span id="sum-net-sign"></span><span data-cur-symbol>$</span><span class="t-digit-group" id="sum-net"></span></span></span>
+          <span class="sum__muted">net in</span>
+          <span class="t-text-swap" id="sum-month"></span>
+        </p>
+        <p class="sum__line">
+          <span class="sum__fig"><img class="sum__icon" style="--tilt:-9deg" src="assets/summary-time.svg" alt=""><span><span class="t-digit-group" id="sum-hours"></span>&nbsp;h</span></span>
+          <span class="sum__muted">over</span>
+          <span class="sum__fig"><img class="sum__icon" style="--tilt:-9deg" src="assets/summary-calendar.svg" alt=""><span><span class="t-digit-group" id="sum-days"></span>&nbsp;<span id="sum-days-unit">days</span></span></span>
+          <span class="sum__muted">for</span>
+        </p>
+        <p class="sum__line sum__line--projects">
+          <span class="sum__fig"><span class="sum__avatars" id="sum-avatars"></span><span><span class="t-digit-group" id="sum-projects"></span>&nbsp;<span id="sum-projects-unit">projects</span></span></span>
+          <span class="chip sum__empty" id="sum-empty" hidden></span>
+        </p>
+      </div>
+      <span class="sum__sep" aria-hidden="true"></span>
+      <p class="sum__meta" id="sum-meta"></p>
+      <span class="sum__sep sum__sep--onb" aria-hidden="true"></span>
+    </section>
+
     <main class="main">
       <div class="board">
         <!-- Calendar container · Figma 93:1210 -->
-        <section class="card cal" aria-label="Calendar" style="--i:1">
+        <section class="card cal" id="cal" aria-label="Calendar" style="--i:1">
           <div class="cal-head">
             <div class="cal-head__lead">
               <!-- Animated calendar icon · prototypes/calendar-icon (D-008) -->
@@ -144,7 +171,7 @@
           </div>
 
           <!-- Billing · Figma 93:1287 (empty) and 100:2521 (filled). Card ends where the code section starts; the receipt runs out of it. -->
-          <section class="card bill" aria-labelledby="bill-title" style="--i:4">
+          <section class="card bill" id="bill" aria-labelledby="bill-title" style="--i:4">
             <div class="card__title">
               <h2 id="bill-title">Billing</h2>
               <div class="cur" id="bill-cur">
@@ -198,6 +225,14 @@
       <span>Terms</span>
       <span>Privacy</span>
     </footer>
+
+    <!-- Nav bar · mobile only, Figma 292:84733 (item 292:84688). Switches the Calendar and Billing tabs. -->
+    <nav class="tabs" aria-label="Sections">
+      <div class="tabs__bar" role="tablist">
+        <button class="tabs__item" type="button" role="tab" data-tab="calendar" aria-controls="cal" aria-selected="true"><span class="tabs__icon" data-icon="calendar" aria-hidden="true"></span><span>Calendar</span></button>
+        <button class="tabs__item" type="button" role="tab" data-tab="billing" aria-controls="bill" aria-selected="false"><span class="tabs__icon" data-icon="billing" aria-hidden="true"></span><span>Billing</span></button>
+      </div>
+    </nav>
   </div>
 
   <!-- [?] Not in Figma: popover on a day while there are no projects. Built from DS tokens. -->

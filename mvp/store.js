@@ -39,6 +39,7 @@
       taxesDone: false,    // onboarding step 2
       onboardingDone: false,
       weekends: false,
+      updatedAt: 0,        // last data change, for "Updated … ago" in the mobile summary (277:42039)
     };
   }
 
@@ -60,6 +61,7 @@
     s.deductions = [{ id: uid(), name: "Taxes", value: 12, type: "percent" }, { id: uid(), name: "Fee", value: 200, type: "fixed" }];
     s.taxesDone = true;
     s.onboardingDone = true;
+    s.updatedAt = Date.now() - 2 * 60 * 60 * 1000; // "Updated 2 h ago", as in Figma 288:39238
     return s;
   }
 
@@ -81,8 +83,12 @@
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage full or blocked */ }
   }
 
+  // Changes to the numbers themselves; view settings (weekends, currency) don't count as an update.
+  const DATA_REASONS = new Set(["projects", "entries", "monthly", "deductions"]);
+
   /* Every mutation goes through commit(): save, then let the page re-render what changed. */
   function commit(reason, detail) {
+    if (DATA_REASONS.has(reason)) state.updatedAt = Date.now();
     save();
     listeners.forEach((fn) => fn(reason, detail));
   }
