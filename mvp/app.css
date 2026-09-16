@@ -32,6 +32,18 @@
   /* Month grid slide — page side-by-side, shortened for a grid that changes on every arrow click. */
   --air-dur: 480ms;
   --air-ease: var(--ease-smooth-out);
+
+  /* transitions.dev 06 modal and 18 texts reveal, canonical values. */
+  --modal-open-dur: 250ms;
+  --modal-close-dur: 150ms;
+  --modal-scale: 0.96;
+  --modal-scale-close: 0.96;
+  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --stagger-dur: 500ms;
+  --stagger-distance: 12px;
+  --stagger-stagger: 40ms;
+  --stagger-blur: 3px;
+  --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * { box-sizing: border-box; }
@@ -514,12 +526,15 @@ body {
   color: var(--text-muted-foreground);
   font: var(--ts-body-md-regular);
 }
-.onb__list [data-active] { color: var(--text-accent); }
+.onb__list li { transition: color var(--duration-fast) var(--ease-smooth-out); }
+.onb__list li[data-state="done"] { color: var(--text-primary); }
+.onb__list li[data-state="active"] { color: var(--text-accent); }
+.onb__rail i { transition: background-color var(--duration-fast) var(--ease-smooth-out); }
 .onb .ds-btn { inline-size: 100%; }
 
 /* ───── Billing · Figma 93:1287 ───── */
 
-.bill { z-index: 1; block-size: 239px; gap: 12px; }
+.bill { z-index: 1; gap: 12px; }
 
 .cur { position: relative; }
 .currency {
@@ -618,7 +633,10 @@ body {
   color: var(--color-green-800);
 }
 
+/* The card ends where the code section starts (annotation 93:1287): the receipt hangs out by
+   code section 46 + body padding 20 + zigzag 8.5, plus the card's own padding 16 and border 1. */
 .receipt {
+  margin-block-end: -91.5px;
   filter:
     drop-shadow(0 3px 3px rgba(0, 0, 0, 0.03))
     drop-shadow(0 11px 5.5px rgba(0, 0, 0, 0.03))
@@ -649,6 +667,502 @@ body {
 .barcode__note { margin: 0; color: var(--text-muted-foreground); font: var(--ts-body-sm-regular); text-align: center; }
 .receipt__edge { display: block; }
 .receipt__edge path { fill: var(--bg-background); }
+
+/* ───── Fold · opens and closes a block by height (card resize timing, transitions.dev 01) ───── */
+
+.fold {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows var(--resize-dur) var(--resize-ease),
+    opacity var(--duration-fast) var(--ease-smooth-out),
+    margin var(--resize-dur) var(--resize-ease);
+}
+.fold > .fold__inner { min-block-size: 0; min-inline-size: 0; }
+/* Clip only while moving or closed, so card shadows are not cut at rest. */
+.fold:is(.is-folding, [data-folded]) > .fold__inner { overflow: clip; }
+.fold[data-folded] { grid-template-rows: 0fr; opacity: 0; }
+.side > .fold[data-folded] { margin-block-end: -12px; }
+.onb__cta[data-folded] { margin-block-start: -16px; }
+.receipt__body > .fold[data-folded] { margin-block-end: -16px; }
+
+/* ───── Projects · Figma 145:5130, item 35:1069 ───── */
+
+/* clip, not hidden: a hidden box can still be scrolled by focus, which shoved the header out of view. */
+.proj { gap: 12px; overflow: clip; }
+.proj__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-inline-start: 4px; }
+.proj__headline { display: flex; align-items: center; gap: 12px; min-inline-size: 0; }
+.proj__headline h2 { margin: 0; font: var(--ts-body-lg-medium); color: var(--text-primary); }
+.proj__count[hidden] { display: none; }
+.proj__actions { display: flex; align-items: center; gap: 12px; }
+.proj__tabs[hidden] { display: none; }
+.proj__tabs .ds-segmented__item { padding: 0 10px; }
+.proj__tabs .ds-segmented__item img { display: block; }
+
+.proj__list { position: relative; display: flex; flex-direction: column; gap: 8px; }
+
+/* Collapsed when 3+ projects (annotation 288:38739): 160px, a fade, Show all on hover. */
+.proj[data-collapsible]:not([data-open]) { block-size: 160px; }
+.proj__fade {
+  position: absolute;
+  inset-inline: -1px;
+  inset-block-end: -1px;
+  block-size: 41px;
+  background: linear-gradient(to bottom, transparent, var(--bg-card) 72%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    block-size var(--duration-fast) var(--ease-smooth-out),
+    opacity var(--duration-fast) var(--ease-smooth-out);
+}
+.proj__more {
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-end: 17px;
+  translate: -50% 55px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    translate var(--duration-fast) var(--ease-smooth-out),
+    opacity var(--duration-quick) var(--ease-smooth-out),
+    background-color var(--duration-quick) var(--ease-smooth-out),
+    box-shadow var(--duration-quick) var(--ease-smooth-out);
+}
+.proj__less { display: none; inline-size: 100%; }
+.proj[data-collapsible]:not([data-open]) .proj__fade { opacity: 1; }
+.proj[data-collapsible]:not([data-open]):is(:hover, :focus-within) .proj__fade { block-size: 60px; }
+.proj[data-collapsible]:not([data-open]):is(:hover, :focus-within) .proj__more { translate: -50% 0; opacity: 1; pointer-events: auto; }
+.proj[data-collapsible][data-open] .proj__less { display: inline-flex; }
+
+.pitem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px; /* 4px minus the inside stroke */
+  border: 1px solid var(--border-subtle-20);
+  border-radius: 16px;
+  background: var(--bg-secondary-10);
+  -webkit-backdrop-filter: var(--effect-bg-blur-md);
+  backdrop-filter: var(--effect-bg-blur-md);
+  transition:
+    opacity var(--stagger-dur) var(--stagger-ease),
+    translate var(--stagger-dur) var(--stagger-ease),
+    filter var(--stagger-dur) var(--stagger-ease);
+  transition-delay: calc(var(--i, 0) * var(--stagger-stagger));
+}
+/* Texts reveal (transitions.dev 18) for a new row; a quiet fade out for a removed one. */
+.pitem.is-entering { opacity: 0; translate: 0 var(--stagger-distance); filter: blur(var(--stagger-blur)); }
+.pitem.is-leaving {
+  position: absolute;
+  inset-inline: 0;
+  opacity: 0;
+  filter: blur(var(--motion-blur-small));
+  pointer-events: none;
+  transition-duration: var(--duration-quick);
+  transition-delay: 0s;
+}
+.pitem__info {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-inline-size: 0;
+  padding: 8px 12px 8px 8px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  box-shadow: var(--effect-popover-shadow-soft);
+}
+.pitem__who { display: flex; align-items: center; gap: 8px; min-inline-size: 0; }
+.pitem__avatar {
+  flex: none;
+  inline-size: 24px;
+  block-size: 24px;
+  border: 1px solid var(--border-subtle-20);
+  border-radius: 8px;
+  object-fit: cover;
+}
+.pitem__name { overflow: hidden; color: var(--text-primary); font: var(--ts-body-lg-regular); text-overflow: ellipsis; white-space: nowrap; }
+.pitem__stat { flex: none; color: var(--text-primary); font: var(--ts-body-lg-medium); white-space: nowrap; }
+.pitem__edit {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: 0;
+  block-size: 40px;
+  margin-inline-start: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bg-secondary-20);
+  opacity: 0;
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    inline-size var(--duration-fast) var(--ease-smooth-out),
+    margin var(--duration-fast) var(--ease-smooth-out),
+    opacity var(--duration-quick) var(--ease-smooth-out),
+    background-color var(--duration-quick) var(--ease-smooth-out),
+    box-shadow var(--duration-quick) var(--ease-smooth-out);
+}
+.pitem__edit img { flex: none; }
+.pitem:is(:hover, :focus-within) .pitem__edit { inline-size: 40px; margin-inline-start: 0; opacity: 1; }
+.pitem__edit:hover { background: var(--bg-secondary-50); }
+.pitem__edit:active { scale: var(--motion-scale-large); }
+.pitem__edit:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
+.pitem__btn:hover { --btn-bg: var(--bg-secondary-50); }
+
+/* ───── Billing · filled rows · Figma 100:2521 ───── */
+
+.receipt__projects { display: flex; flex-direction: column; gap: 12px; }
+.receipt__sep--gap { margin-block-start: 16px; }
+.receipt__proj {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  inline-size: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font: var(--ts-body-lg-regular);
+  text-align: start;
+  cursor: copy;
+}
+.receipt__pname { overflow: hidden; color: var(--text-secondary); text-overflow: ellipsis; white-space: nowrap; transition: color var(--duration-quick) var(--ease-smooth-out); }
+.receipt__proj:hover .receipt__pname { color: var(--text-primary); }
+.receipt__proj:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
+.receipt__pamount { display: flex; flex: none; align-items: center; gap: 8px; color: var(--text-primary); }
+.receipt__pvalue { display: inline-flex; }
+/* Icon swap (transitions.dev 09): copy → done. */
+.copy-swap { display: inline-grid; }
+.copy-swap img {
+  display: block;
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--icon-swap-dur) var(--icon-swap-ease),
+    filter var(--icon-swap-dur) var(--icon-swap-ease),
+    transform var(--icon-swap-dur) var(--icon-swap-ease);
+}
+.copy-swap[data-state="copy"] [data-icon="done"],
+.copy-swap[data-state="done"] [data-icon="copy"] {
+  opacity: 0;
+  filter: blur(var(--icon-swap-blur));
+  transform: scale(var(--icon-swap-start-scale));
+}
+
+.receipt__deductions { display: flex; flex-direction: column; gap: 16px; }
+.receipt__label { display: inline-flex; align-items: center; gap: 8px; }
+.receipt__edit {
+  display: grid;
+  place-items: center;
+  inline-size: 24px;
+  block-size: 24px;
+  margin: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  transition: background-color var(--duration-quick) var(--ease-smooth-out), box-shadow var(--duration-quick) var(--ease-smooth-out);
+}
+.receipt__edit:hover { background: var(--bg-secondary-20); }
+.receipt__edit:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
+.receipt__edit img { display: block; }
+
+/* ───── Modal · Figma 292:107695, transitions.dev 06 ───── */
+
+.has-modal { overflow: hidden; }
+.modal-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.modal-layer[hidden] { display: none; }
+.modal-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.06); /* Figma 292:99845: black at 6% */
+  opacity: 0;
+  transition: opacity var(--modal-close-dur) var(--modal-ease);
+}
+.modal-layer.is-open .modal-scrim { opacity: 1; transition-duration: var(--modal-open-dur); }
+
+.modal {
+  position: relative;
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  inline-size: 440px;
+  max-inline-size: 100%;
+  padding: 20px;
+  border-radius: 24px;
+  background: var(--bg-card);
+  box-shadow: inset 0 0 0 1px var(--border-default-60), var(--effect-popover-shadow-hard);
+}
+.modal .ds-separator { padding-block: 6px; }
+.modal .ds-btn[data-size="lg"] { font: var(--ts-body-lg-medium); }
+.modal .ds-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.modal__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.modal__title { display: flex; align-items: center; gap: 12px; min-block-size: 30px; min-inline-size: 0; }
+.modal__titles { display: flex; flex-direction: column; min-inline-size: 0; }
+.modal__h { margin: 0; color: var(--text-primary); font: var(--ts-headline-h6-semibold); }
+.modal__sub { margin: 0; color: var(--text-tertiary); font: var(--ts-body-sm-regular); }
+.modal__text { margin: 0; color: var(--text-secondary); font: var(--ts-body-md-regular); }
+.modal__note { margin: 0; color: var(--text-tertiary); font: var(--ts-body-sm-regular); }
+.modal__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.modal__avatar {
+  flex: none;
+  inline-size: 24px;
+  block-size: 24px;
+  border: 1px solid var(--border-subtle-20);
+  border-radius: 8px;
+  object-fit: cover;
+}
+/* Annotation 288:46529: the headline avatar swaps live. Icon swap (09) entry. */
+@keyframes avatar-swap {
+  from { opacity: 0; filter: blur(var(--icon-swap-blur)); transform: scale(0.6); }
+}
+.modal__avatar.is-swapped { animation: avatar-swap var(--icon-swap-dur) var(--ease-smooth-out) both; }
+
+/* Project summary · 292:107176 (hidden while the project has no hours) */
+.pm-summary { display: flex; align-items: stretch; gap: 8px; padding: 16px; border-radius: 20px; background: var(--bg-secondary-20); }
+.pm-summary__cell { display: flex; flex: 1; flex-direction: column; align-items: center; min-inline-size: 0; white-space: nowrap; }
+.pm-summary__value { color: var(--text-primary); font: var(--ts-headline-h6-semibold); }
+.pm-summary__label { color: var(--text-secondary); font: var(--ts-body-md-regular); }
+.pm-summary__sep { flex: none; inline-size: 1px; margin-inline: 6px; background: var(--border-default-60); }
+
+/* Avatar picker · 292:99853 */
+.pm-avatars { display: flex; gap: 8px; }
+.pm-avatar {
+  position: relative;
+  flex: none;
+  inline-size: 40px;
+  block-size: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  box-shadow: 0 0 0 0 var(--color-pink-50), 0 0 0 0 var(--color-pink-700);
+  cursor: pointer;
+  transition: box-shadow var(--duration-fast) var(--ease-smooth-out);
+}
+.pm-avatar img { display: block; inline-size: 100%; block-size: 100%; border-radius: 12px; object-fit: cover; }
+.pm-avatar[aria-checked="true"] { box-shadow: 0 0 0 1px var(--color-pink-50), 0 0 0 4px var(--color-pink-700); }
+.pm-avatar:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 6px; }
+.pm-upload { flex: none; }
+
+.pm-form { display: flex; flex-direction: column; gap: 12px; }
+.pm-row { display: flex; align-items: center; gap: 12px; }
+.pm-row .ds-field { flex: 1; inline-size: auto; min-inline-size: 0; }
+.pm-label {
+  display: flex;
+  flex: none;
+  align-items: center;
+  inline-size: 140px;
+  block-size: 40px;
+  padding: 0 8px 0 12px;
+  border-radius: 12px;
+  background: var(--bg-background);
+  box-shadow: inset 0 0 0 1px var(--border-default-60);
+  color: var(--text-disabled);
+  font: var(--ts-body-lg-regular);
+  white-space: nowrap;
+}
+.pm-cur { position: relative; flex: none; }
+.cur-select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  inline-size: 110px;
+  block-size: 40px;
+  padding: 0 8px 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--bg-background);
+  box-shadow: inset 0 0 0 1px var(--border-muted);
+  color: var(--text-primary);
+  font: var(--ts-body-lg-regular);
+  cursor: pointer;
+  transition: box-shadow var(--duration-quick) var(--ease-smooth-out), background-color var(--duration-quick) var(--ease-smooth-out);
+}
+.cur-select__code { flex: 1; text-align: start; }
+.cur-select img { margin: 5px; }
+.cur-select:hover { background: var(--bg-secondary-10); }
+.cur-select:is([aria-expanded="true"], :focus-visible) { outline: none; box-shadow: inset 0 0 0 1px var(--border-accent); }
+
+/* Deductions · 292:107589 */
+.dd-cur { position: relative; flex: none; }
+.dd-form { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
+.dd-rows { display: flex; flex-direction: column; align-self: stretch; gap: 12px; }
+.dd-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition:
+    opacity var(--duration-fast) var(--ease-smooth-out),
+    translate var(--duration-fast) var(--ease-smooth-out),
+    filter var(--duration-fast) var(--ease-smooth-out),
+    block-size var(--duration-medium) var(--resize-ease),
+    margin var(--duration-medium) var(--resize-ease);
+}
+.dd-row .ds-field { flex: 1; inline-size: auto; min-inline-size: 0; }
+.dd-row.is-entering { opacity: 0; translate: 0 var(--distance-base); filter: blur(var(--motion-blur-small)); }
+.dd-row.is-leaving { block-size: 0 !important; margin-block-end: -12px; opacity: 0; filter: blur(var(--motion-blur-small)); overflow: hidden; }
+.dd-value {
+  display: flex;
+  flex: none;
+  align-items: center;
+  inline-size: 90px;
+  block-size: 40px;
+  padding: 0 8px 0 12px;
+  border-radius: 12px;
+  background: var(--bg-background);
+  box-shadow: inset 0 0 0 1px var(--border-default-60);
+  cursor: text;
+  transition: box-shadow var(--duration-quick) var(--ease-smooth-out);
+}
+.dd-value:hover { box-shadow: inset 0 0 0 1px var(--border-muted); }
+.dd-value:focus-within { box-shadow: inset 0 0 0 1px var(--border-accent); }
+.dd-value__input {
+  flex: 1;
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--text-primary);
+  font: var(--ts-body-lg-regular);
+  caret-color: var(--text-accent);
+}
+.dd-value__input::placeholder { color: var(--text-tertiary); }
+.dd-value__unit { flex: none; inline-size: 24px; color: var(--text-tertiary); font: var(--ts-body-lg-regular); text-align: center; }
+.dd-type { --seg-h: 40px; --seg-r: 12px; flex: none; background: var(--bg-secondary-20); }
+.dd-type .ds-segmented__item { padding: 0 12px; font: var(--ts-body-lg-regular); }
+.dd-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--color-pink-700);
+  font: var(--ts-body-md-semibold);
+  cursor: pointer;
+  transition: color var(--duration-quick) var(--ease-smooth-out), box-shadow var(--duration-quick) var(--ease-smooth-out);
+}
+.dd-add img { display: block; transition: rotate var(--duration-fast) var(--ease-smooth-out); }
+.dd-add:hover { color: var(--color-pink-800); }
+.dd-add:hover img { rotate: 90deg; }
+.dd-add:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
+
+/* ───── Hours popover · Figma 292:113465 ───── */
+
+.hpop {
+  inline-size: 340px;
+  padding: 8px;
+  border-radius: 24px;
+  background: var(--bg-card);
+  box-shadow: inset 0 0 0 1px var(--border-default-60), var(--effect-popover-shadow-soft);
+}
+.hpop__list { display: flex; flex-direction: column; gap: 4px; }
+.hrow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 16px;
+  background: transparent;
+  transition: background-color var(--duration-fast) var(--ease-smooth-out);
+}
+.hrow[data-selected] { background: var(--bg-secondary-20); } /* annotation 292:113466: selected project */
+.hrow__name { display: flex; flex: 1; align-items: center; gap: 8px; min-inline-size: 0; padding: 8px 12px 8px 8px; }
+.hrow__avatar { flex: none; inline-size: 24px; block-size: 24px; border: 1px solid var(--border-subtle-20); border-radius: 8px; object-fit: cover; }
+.hrow__label {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  background: linear-gradient(169deg, var(--color-pink-600), var(--color-pink-800));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font: var(--ts-body-lg-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hstep {
+  display: flex;
+  flex: none;
+  align-items: center;
+  inline-size: 120px;
+  block-size: 40px;
+  padding: 4px 5px;
+  border-radius: 12px;
+  background: var(--bg-background);
+  box-shadow: inset 0 0 0 1px var(--border-default-60);
+  transition: box-shadow var(--duration-quick) var(--ease-smooth-out);
+}
+.hstep:focus-within { box-shadow: inset 0 0 0 1px var(--border-accent); }
+.hstep .ds-icon-btn img { display: block; }
+.hstep .ds-icon-btn:disabled { opacity: 0.4; cursor: default; }
+.hstep .ds-icon-btn:not(:disabled):hover { --btn-bg: var(--bg-secondary-50); }
+.hstep .ds-icon-btn:not(:disabled):active { scale: var(--motion-scale-large); }
+.hstep__value { display: flex; flex: 1; align-items: baseline; justify-content: center; gap: 4px; min-inline-size: 0; color: var(--text-primary); font: var(--ts-body-lg-regular); cursor: text; }
+.hstep__input {
+  field-sizing: content;
+  inline-size: 3ch;
+  min-inline-size: 1ch;
+  max-inline-size: 4ch;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: end;
+  caret-color: var(--text-accent);
+}
+.hstep__input.is-bump { --digit-distance: 4px; animation: t-digit-pop-in var(--digit-dur) var(--digit-ease) both; }
+.hrow__act { display: grid; place-items: center; }
+.hrow__act img { display: block; }
+.hrow__act:not([data-type]):hover { --btn-bg: var(--bg-primary-80); }
+.hrow__act[data-type]:hover { --btn-bg: var(--bg-secondary-50); }
+.hrow__act:active { scale: var(--motion-scale-large); }
+/* Icon swap (transitions.dev 09): add ↔ remove. */
+.hrow__act .t-icon {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--icon-swap-dur) var(--icon-swap-ease),
+    filter var(--icon-swap-dur) var(--icon-swap-ease),
+    transform var(--icon-swap-dur) var(--icon-swap-ease);
+}
+.hrow__act:not([data-type]) [data-icon="remove"],
+.hrow__act[data-type] [data-icon="add"] {
+  opacity: 0;
+  filter: blur(var(--icon-swap-blur));
+  transform: scale(var(--icon-swap-start-scale));
+}
+
+/* New avatar on a day: badge pop (transitions.dev 03 timing). */
+@keyframes avatar-pop {
+  from { opacity: 0; scale: 0.4; filter: blur(var(--motion-blur-small)); }
+}
+.day__avatar.is-new { animation: avatar-pop var(--badge-pop-dur) var(--badge-pop-ease) both; }
+
+/* ───── Toast · Figma 292:107912 ───── */
+
+.ds-toast.toast { align-items: center; inline-size: auto; min-inline-size: 383px; }
+.toast .ds-toast__main { align-items: center; }
+.toast .ds-toast__icon img { display: block; }
+.toast .ds-btn img { display: block; }
 
 /* ───── Footer · Figma 263:9949 ───── */
 
@@ -701,9 +1215,44 @@ body {
   to { opacity: 1; translate: 0 0; filter: blur(0); }
 }
 /* `backwards`, not `both`: a kept blur(0) would stay a filter and cut backdrop blur inside the cards. */
-.hdr, .cal, .side > .card, .foot {
+.hdr, .cal, .side .card, .foot {
   animation: air-rise 700ms var(--air-ease) backwards;
   animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* ───── transitions.dev 06 · modal, verbatim ───── */
+
+.t-modal {
+  transform-origin: center;
+  transform: scale(var(--modal-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-open-dur) var(--modal-ease),
+    opacity   var(--modal-open-dur) var(--modal-ease);
+  will-change: transform, opacity;
+}
+.t-modal.is-open {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+.t-modal.is-closing {
+  transform: scale(var(--modal-scale-close));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-close-dur) var(--modal-ease),
+    opacity   var(--modal-close-dur) var(--modal-ease);
+}
+
+/* ───── transitions.dev 01 · card resize, verbatim ───── */
+
+.t-resize {
+  transition:
+    width  var(--resize-dur) var(--resize-ease),
+    height var(--resize-dur) var(--resize-ease);
+  will-change: width, height;
 }
 
 /* ───── transitions.dev snippets, verbatim from prototypes/calendar-icon/transitions.css ───── */

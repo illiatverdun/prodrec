@@ -1,24 +1,42 @@
 # prod.rec · MVP
 
 Нові екрани з фінального UI у Figma (`ZEFAWPi4a1vPyRZ0Mmh5Hi`, «[ProdREC] Sketches»).
-Ванільний HTML/CSS/JS поверх `../design-system/` і `../prototypes/calendar-icon/`.
+Ванільний HTML/CSS/JS поверх `../design-system/` (токени, компоненти, `components.js`) і `../prototypes/calendar-icon/`.
 
-| Екран / компонент | Figma | Файли | Стан |
+| Екран / компонент | Figma | Де | Стан |
 |---|---|---|---|
-| Calendar page · Empty state · 1440 | `93:1203` | `index.html`, `app.css`, `app.js` | чернетка, лише десктоп |
+| Calendar page · порожня й заповнена | `93:1203`, `100:2437` | `index.html` | лише десктоп |
+| Онбординг: проєкт → податки → перший день | прототип `292:110846` | `app.js` | готово |
 | Calendar item · 12 варіантів | `113:8701` | `calendar-item.js`, `components.html` | готово |
-| Меню календаря «⋯» | `199:11366` | у `index.html` | пункти без дії, крім Weekends |
-| Дропдаун валюти | `269:35841` | у `index.html` | готово, без конвертації |
-| Extra actions + підказки | `18:5882`, `97:1985` | у `index.html` | пункти без дії |
+| Поповер годин на день | `292:113465` | `app.js` | готово |
+| Projects: згорнута, ховер, відкрита, архів, 1 проєкт | `145:5130`, item `35:1069` | `app.js` | готово |
+| Billing заповнений: рядки проєктів, відрахування, копіювання | `100:2521` | `app.js` | готово |
+| New project / Edit project | `292:99846`, `292:106995` | `modals.js` | готово |
+| Deductions (крок 2 онбордингу, олівець у Billing) | `292:107589` | `modals.js` | готово |
+| Підтвердження видалення з історією | `292:107376` | `modals.js` | готово |
+| Тост з Reset | `292:107912` | `ui.js` | готово |
+| Меню «⋯» | `199:11366` | `index.html` | Clear працює; Copy і 7 днів — ні |
+| Дропдаун валюти | `269:35841` | `ui.js` | готово, курси з CDN |
+| Extra actions + підказки | `18:5882`, `97:1985` | `index.html` | пункти без дії |
 
-Відкрити: `index.html` у браузері. `?today=2026-09-24` фіксує «сьогодні» для звірки з Figma.
-`components.html` показує всі варіанти картки дня; колонка Hover закріплена `data-force="hover"`.
+## Файли
 
-Рух — сніпети transitions.dev (text swap, number pop-in, menu dropdown, icon swap, tooltip,
-avatar group hover) на токенах із `design-system/tokens.css`. Змінні, яких у токенах немає,
-лежать на початку `app.css` — без них браузер відкидає анімацію цілком.
+| Файл | Що робить |
+|---|---|
+| `store.js` | Дані, збереження в браузері, усі розрахунки (місяць, Billing, валюти) |
+| `ui.js` | Переходи transitions.dev, модалка, тост, вибір валюти, аватарки |
+| `modals.js` | Чотири модалки |
+| `app.js` | Сторінка: календар, поповер годин, Projects, Billing, Onboarding, меню |
+| `calendar-item.js` | Розмітка картки дня, спільна з `components.html` |
 
-Що свідомо відкладено й чому — `product/decisions.md` → **D-009**, **D-010**.
+## Як відкрити
 
-`assets/` — SVG і PNG, завантажені з Figma. Пляма Extra actions переведена в PNG (у SVG 498 КБ),
-аватарки зменшено до 60px, логотип береться з `design-system/assets/images/prodrec-logo.png`.
+`index.html` у браузері. Дані живуть у `localStorage` цього браузера.
+
+- `?today=2026-09-24` — фіксує «сьогодні» для звірки з Figma
+- `?fresh` — стирає збережене, щоб пройти онбординг з нуля
+- `?demo` — п'ять проєктів із Figma для перевірки станів; нічого не зберігає
+
+Рішення, припущення і все, що тут `[?]` — `product/decisions.md` → **D-009**, **D-010**, **D-011**.
+
+`assets/` — SVG і PNG, завантажені з Figma. Пресети аватарок — `assets/avatars/`, експорт вузлів `292:107016…107094` у 3×.

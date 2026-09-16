@@ -6,7 +6,8 @@
 
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
-  /* { day, key, today, disabled, selected, avatars: [src], force: "hover" } */
+  /* { day, key, today, disabled, selected, avatars: [src | { src, fresh }], force: "hover" }
+     Annotation 113:8769: at most 4 avatars, the rest are not shown. */
   function markup(o) {
     const attrs = [
       o.key ? ` data-key="${esc(o.key)}"` : "",
@@ -16,7 +17,7 @@
       o.force ? ` data-force="${esc(o.force)}"` : "",
     ].join("");
     const avatars = o.selected && o.avatars && o.avatars.length
-      ? `<span class="day__avatars">${o.avatars.slice(0, 4).map((src) => `<img class="day__avatar t-avatar" src="${esc(src)}" alt="">`).join("")}</span>`
+      ? `<span class="day__avatars">${o.avatars.slice(0, 4).map((a) => `<img class="day__avatar t-avatar${a.fresh ? " is-new" : ""}" src="${esc(a.src || a)}" alt="">`).join("")}</span>`
       : "";
     return `<div class="day"${attrs}><div class="day__card"><span class="day__num">${esc(o.day)}</span>${avatars}</div></div>`;
   }
