@@ -1,14 +1,16 @@
-/* prod.rec MVP · Google login and cloud sync (Firebase Auth + Firestore). D-015.
+/* prod.rec MVP · Google login, cloud sync and the account menu (Firebase Auth + Firestore). D-015.
    Signed out, nothing changes: data lives in localStorage as before.
    Signed in, the whole state is one document, users/{uid}, and every commit is pushed to it.
-   Firestore rules (set in the console) let a user read and write only their own document.
+   Firestore rules (set in the console) let a user read and write only their own document,
+   and only create documents in feedback/.
    The config below is public by design: it identifies the project, the rules guard the data. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, addDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const { store, ui } = window.PR;
 const demo = new URLSearchParams(location.search).has("demo");
+const $ = (s) => document.querySelector(s);
 
 const app = initializeApp({
   apiKey: "AIzaSyB6Ar_THPCeJAdStE1evJzS4C5jtG97DOI",
@@ -21,9 +23,10 @@ const app = initializeApp({
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const btn = document.querySelector("#login");
-const label = btn.querySelector("[data-label]");
-const icon = btn.querySelector("[data-icon]");
+const loginBtn = $("#login");
+const acct = $("#acct");
+const toggle = $("#acct-toggle");
+const pop = $("#acct-pop");
 
 let ref = null;          // users/{uid} while signed in
 let unlisten = null;     // Firestore live listener
@@ -33,20 +36,114 @@ let pushTimer;
 
 const fail = (title, err) => { console.error(title, err); ui.toast({ title }); };
 
-function renderButton(user) {
-  btn.disabled = false;
-  if (user) {
-    label.textContent = "Log out";
-    icon.src = user.photoURL || "assets/google.svg";
-    icon.classList.toggle("login__photo", !!user.photoURL);
-    btn.setAttribute("aria-label", `Log out ${user.email || ""}`.trim());
-  } else {
-    label.textContent = "Log in";
-    icon.src = "assets/google.svg";
-    icon.classList.remove("login__photo");
-    btn.removeAttribute("aria-label");
-  }
+/* ───── Header: Log in button, or the avatar with its menu ───── */
+
+// Avatar from the Google account; the first letter when there is no photo or it fails to load.
+function renderAvatar(user) {
+  const initial = (user.displayName || user.email || "?").trim().charAt(0).toUpperCase();
+  document.querySelectorAll("[data-avatar]").forEach((el) => {
+    el.textContent = initial;
+    if (!user.photoURL) return;
+    const img = new Image();
+    img.alt = "";
+    img.referrerPolicy = "no-referrer"; // Google photo URLs refuse some referrers
+    img.onload = () => { el.textContent = ""; el.appendChild(img); };
+    img.src = user.photoURL;
+  });
 }
+
+function renderHeader(user) {
+  loginBtn.disabled = false;
+  loginBtn.hidden = !!user;
+  acct.hidden = !user;
+  if (!user) { setMenu(false); return; }
+  renderAvatar(user);
+  $("#acct-email").textContent = user.email || user.displayName || "";
+  toggle.setAttribute("aria-label", `Account, ${user.email || ""}`.trim());
+}
+
+const items = () => [...pop.querySelectorAll(".ds-menu-item")];
+function setMenu(open, { focus = false } = {}) {
+  if (open === ui.isOpen(pop)) return;
+  if (open) {
+    ui.closeFloats(closeMenu);
+    ui.openFloat(pop);
+    if (focus) items()[0].focus({ preventScroll: true });
+  } else {
+    ui.closeFloat(pop);
+    if (pop.contains(document.activeElement)) toggle.focus({ preventScroll: true });
+  }
+  toggle.setAttribute("aria-expanded", String(open));
+}
+const closeMenu = () => setMenu(false);
+ui.floats.add(closeMenu);
+
+toggle.addEventListener("click", () => setMenu(!ui.isOpen(pop)));
+toggle.addEventListener("keydown", (e) => { if (e.key === "ArrowDown") { e.preventDefault(); setMenu(true, { focus: true }); } });
+pop.addEventListener("keydown", (e) => {
+  const list = items();
+  const i = list.indexOf(document.activeElement);
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); list[(i + (e.key === "ArrowDown" ? 1 : -1) + list.length) % list.length].focus(); }
+  if (e.key === "Escape") { e.preventDefault(); setMenu(false); }
+  if (e.key === "Tab") setMenu(false);
+});
+document.addEventListener("pointerdown", (e) => { if (ui.isOpen(pop) && !acct.contains(e.target)) setMenu(false); });
+
+pop.addEventListener("click", (e) => {
+  const item = e.target.closest("[data-acct]");
+  if (!item) return;
+  setMenu(false);
+  if (item.dataset.acct === "feedback") openFeedback();
+  if (item.dataset.acct === "logout") logOut();
+});
+
+/* ───── Feedback · text area in a modal, saved to feedback/ ───── */
+
+function openFeedback() {
+  const el = document.createElement("div");
+  el.setAttribute("aria-labelledby", "fb-title");
+  el.innerHTML = `
+    <div class="modal__head">
+      <div class="modal__title">
+        <div class="modal__titles">
+          <h2 class="modal__h" id="fb-title">Leave feedback</h2>
+          <p class="modal__sub">What works, what's missing, what gets in the way.</p>
+        </div>
+      </div>
+      <button class="ds-icon-btn" data-type="secondary" type="button" aria-label="Close" data-close><img src="assets/close-14.svg" alt="" width="14" height="14"></button>
+    </div>
+    <div class="ds-field fb-text" data-size="md" data-width="fill"><div class="ds-field__control"><span class="ds-field__slot">
+      <textarea class="ds-field__input" id="fb-input" rows="5" maxlength="4000" aria-labelledby="fb-title" placeholder="Your message"></textarea>
+    </span></div></div>
+    <span class="ds-separator" role="presentation"></span>
+    <div class="modal__foot">
+      <button class="ds-btn" data-type="secondary" data-size="lg" type="button" data-close>Close</button>
+      <button class="ds-btn" data-size="lg" type="button" id="fb-send" disabled>Send</button>
+    </div>`;
+  const input = el.querySelector("#fb-input");
+  const send = el.querySelector("#fb-send");
+  input.addEventListener("input", () => { send.disabled = !input.value.trim(); });
+  send.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    const text = input.value.trim();
+    if (!user || !text) return;
+    send.disabled = true;
+    try {
+      await addDoc(collection(db, "feedback"), {
+        text, uid: user.uid, email: user.email || "", createdAt: serverTimestamp(),
+        page: location.pathname, agent: navigator.userAgent,
+      });
+      ui.closeModal();
+      ui.toast({ title: "Thanks! Feedback sent" });
+    } catch (err) {
+      send.disabled = false;
+      fail("Couldn't send feedback. Try again", err);
+    }
+  });
+  ui.openModal(el, { initialFocus: "#fb-input" });
+}
+
+/* ───── Sync ───── */
 
 function applyRemote(json) {
   lastSent = json;
@@ -98,33 +195,32 @@ function disconnect() {
   lastSent = "";
 }
 
-btn.addEventListener("click", async () => {
+async function logOut() {
+  clearTimeout(pushTimer);
+  push();
+  try { await signOut(auth); } catch (err) { fail("Couldn't log out. Try again", err); } // [?] local data stays on this device
+}
+
+loginBtn.addEventListener("click", async () => {
   if (demo) { ui.toast({ title: "Demo data isn't saved. Open the page without ?demo to log in" }); return; }
-  btn.disabled = true;
+  loginBtn.disabled = true;
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
   try {
-    if (auth.currentUser) {
-      clearTimeout(pushTimer);
-      push();
-      await signOut(auth); // [?] local data stays on this device after logging out
-    } else {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-      try {
-        await signInWithPopup(auth, provider);
-      } catch (err) {
-        if (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment") await signInWithRedirect(auth, provider);
-        else if (err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") throw err;
-      }
-    }
+    await signInWithPopup(auth, provider);
   } catch (err) {
-    fail(err.code === "auth/unauthorized-domain" ? "This site isn't allowed to log in yet" : "Couldn't log in. Try again", err);
+    if (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment") {
+      await signInWithRedirect(auth, provider).catch((e) => fail("Couldn't log in. Try again", e));
+    } else if (err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") {
+      fail(err.code === "auth/unauthorized-domain" ? "This site isn't allowed to log in yet" : "Couldn't log in. Try again", err);
+    }
   } finally {
-    renderButton(auth.currentUser);
+    loginBtn.disabled = false;
   }
 });
 
 onAuthStateChanged(auth, async (user) => {
-  renderButton(user);
+  renderHeader(user);
   if (demo) return;
   disconnect();
   if (!user) return;

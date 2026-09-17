@@ -20,8 +20,24 @@
       </a>
       <!-- Google login · sync.js, D-015 -->
       <button class="ds-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="login" disabled>
-        <span class="ds-icon"><img src="assets/google.svg" alt="" data-icon></span><span data-label>Log in</span>
+        <span class="ds-icon"><img src="assets/google.svg" alt=""></span><span>Log in</span>
       </button>
+      <!-- Account menu · Figma 274:32393 (Open=Off / On). Account and Export JSON left out for now (Illia, 2026-09-17). -->
+      <div class="menu acct" id="acct" hidden>
+        <button class="acct__toggle" type="button" id="acct-toggle" aria-label="Account" aria-haspopup="menu" aria-expanded="false" aria-controls="acct-pop"><span class="acct__avatar" data-avatar></span></button>
+        <div class="ds-float ds-popover menu__pop acct__pop" id="acct-pop" role="menu" aria-labelledby="acct-toggle">
+          <div class="acct__who"><span class="acct__avatar" data-avatar></span><span class="acct__email" id="acct-email"></span></div>
+          <span class="ds-separator" role="separator"></span>
+          <button class="ds-menu-item" type="button" role="menuitem" tabindex="-1" data-acct="feedback">
+            <span class="ds-menu-item__main"><span class="menu__icon"><img src="assets/message-20.svg" alt=""></span><span class="ds-menu-item__title">Leave feedback</span></span>
+            <span class="acct__hearts" aria-hidden="true">&#9829;&#9829;&#9829;</span>
+          </button>
+          <span class="ds-separator" role="separator"></span>
+          <button class="ds-menu-item" type="button" role="menuitem" tabindex="-1" data-tone="danger" data-acct="logout">
+            <span class="ds-menu-item__main"><span class="menu__icon"><img src="assets/logout-20.svg" alt=""></span><span class="ds-menu-item__title">Log out</span></span>
+          </button>
+        </div>
+      </div>
     </header>
 
     <!-- Summary · mobile only, Figma 277:42016 (empty) and 288:39211 (filled).
