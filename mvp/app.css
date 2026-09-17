@@ -59,7 +59,8 @@ body {
 .ds-icon > img { display: block; inline-size: 100%; block-size: 100%; }
 .onb .ds-btn, .pop .ds-btn { font: var(--ts-body-md-semibold); }
 
-.page { display: flex; flex-direction: column; min-block-size: 100vh; }
+/* The page fills the screen; the footer sits at the bottom and only a taller board brings a scroll. */
+.page { display: flex; flex-direction: column; min-block-size: 100vh; min-block-size: 100dvh; }
 
 /* ───── Header ───── */
 
@@ -1132,6 +1133,7 @@ body {
 /* ───── Hours popover · Figma 292:113465 ───── */
 
 .hpop {
+  inset: 0 auto auto 0; /* closed, it sat below the page and added 16px of scroll; place() sets the real spot */
   inline-size: 340px;
   padding: 8px;
   border-radius: 24px;
@@ -1231,7 +1233,7 @@ body {
   justify-content: center;
   gap: 24px;
   margin-block-start: auto;
-  padding-block: 110px 16px;
+  padding-block: 60px 16px; /* at least 60px between the board and the footer line (Illia, 2026-09-17) */
   color: var(--text-tertiary);
   font: var(--ts-body-sm-regular);
 }
