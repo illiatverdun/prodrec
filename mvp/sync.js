@@ -5,7 +5,7 @@
    and only create documents in feedback/.
    The config below is public by design: it identifies the project, the rules guard the data. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithCredential, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
 const { store, ui } = window.PR;
@@ -201,22 +201,38 @@ async function logOut() {
   try { await signOut(auth); } catch (err) { fail("Couldn't log out. Try again", err); } // [?] local data stays on this device
 }
 
-loginBtn.addEventListener("click", async () => {
+/* Log in. iOS Safari blocks the third-party storage Firebase's own popup relies on
+   (its handler lives on firebaseapp.com): the Google window closed and nothing happened.
+   So Google's own token client runs the popup on this origin, and Firebase only gets the token.
+   Needs https://illiatverdun.github.io in the OAuth client's Authorized JavaScript origins. */
+const CLIENT_ID = "841980735190-3bfh7iqfhsgatm3d4eo4erm33im66vn7.apps.googleusercontent.com";
+let tokenClient = null;
+function getTokenClient() {
+  if (tokenClient || !(window.google && google.accounts && google.accounts.oauth2)) return tokenClient;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: "openid email profile",
+    callback: async (resp) => {
+      if (resp.error) { fail("Couldn't log in. Try again", resp); return; }
+      try { await signInWithCredential(auth, GoogleAuthProvider.credential(null, resp.access_token)); }
+      catch (err) { fail("Couldn't log in. Try again", err); }
+    },
+    error_callback: (err) => { if (err.type !== "popup_closed") fail(err.type === "popup_failed_to_open" ? "Allow pop-ups to log in" : "Couldn't log in. Try again", err); },
+  });
+  return tokenClient;
+}
+
+// No await before the popup opens: Safari only allows pop-ups straight from the tap.
+loginBtn.addEventListener("click", () => {
   if (demo) { ui.toast({ title: "Demo data isn't saved. Open the page without ?demo to log in" }); return; }
-  loginBtn.disabled = true;
+  const client = getTokenClient();
+  if (client) { client.requestAccessToken({ prompt: "select_account" }); return; }
+  // Google's script didn't load (blocked or offline): Firebase's popup still works on desktop browsers.
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
-  try {
-    await signInWithPopup(auth, provider);
-  } catch (err) {
-    if (err.code === "auth/popup-blocked" || err.code === "auth/operation-not-supported-in-this-environment") {
-      await signInWithRedirect(auth, provider).catch((e) => fail("Couldn't log in. Try again", e));
-    } else if (err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") {
-      fail(err.code === "auth/unauthorized-domain" ? "This site isn't allowed to log in yet" : "Couldn't log in. Try again", err);
-    }
-  } finally {
-    loginBtn.disabled = false;
-  }
+  signInWithPopup(auth, provider).catch((err) => {
+    if (err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") fail("Couldn't log in. Try again", err);
+  });
 });
 
 onAuthStateChanged(auth, async (user) => {
