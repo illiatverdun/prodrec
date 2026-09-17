@@ -1,0 +1,128 @@
+/* ─────────────────────────────────────────────────────────────
+   Календарна іконка 60×60 — Figma ZEFAWPi4a1vPyRZ0Mmh5Hi, 148:5239.
+
+   Потребує transitions.css (transitions.dev: number-pop-in +
+   text-states-swap). Підключати ПІСЛЯ нього.
+
+   Правило продукту: поточний місяць показує сьогоднішнє число,
+   будь-який інший — завжди 1.
+   ───────────────────────────────────────────────────────────── */
+
+.cal-icon {
+  /* Локальне підстроювання переходів під 60×60. Канонічні значення
+     transitions.dev розраховані на великі лічильники: 500ms і 8px
+     на елементі висотою 26px читаються як стрибок. Змінюємо лише
+     значення змінних — самі сніпети недоторкані. */
+  --digit-dur: 260ms;
+  --digit-distance: 5px;
+  --digit-stagger: 45ms;
+  /* 110ms × 2 фази = 220ms — щоб плашка й число сходились до спокою
+     приблизно разом. На 140ms назва місяця дорозмивалась ще довго
+     після того, як число вже стояло. */
+  --text-swap-dur: 110ms;
+
+  --frame: var(--color-pink-400, #fd88f3);
+  position: relative;
+  width: 60px;
+  height: 60px;
+  flex: none;
+}
+
+/* Напрямок входу числа — підтримана сніпетом настройка
+   (--digit-dir-y як множник, 1 = знизу, -1 = згори). */
+.cal-icon[data-dir="prev"] { --digit-dir-y: -1; }
+
+/* ── Корпус ─────────────────────────────────────────────────── */
+.cal-icon__card {
+  position: absolute;
+  inset: 0;
+  border: 3px solid var(--frame);
+  border-radius: 12px;
+  background: rgba(233, 235, 238, 0.2);   /* bg-secondary-20 */
+  overflow: hidden;
+  transition: border-color 220ms var(--ease-in-out, ease-in-out);
+}
+
+/* ── Верхня плашка з назвою місяця ──────────────────────────── */
+.cal-band {
+  position: absolute;
+  top: -3px;
+  left: -1px;
+  width: 56px;
+  padding: 4px 10px 2px;
+  background: var(--background, #fcfdfd);
+  border-bottom: 1px solid var(--border, #e9ebee99);
+  display: flex;
+  justify-content: center;
+  /* Колір переходить ТУТ, на батькові, а не на самому тексті.
+     .cal-band__text несе .t-text-swap, чий `transition` перелічує
+     transform/filter/opacity — власний `transition` на тому ж
+     елементі замінив би його цілком, і обидві фази свопу клацали б
+     без анімації. Текст просто успадковує колір, що змінюється. */
+  color: var(--muted-foreground, #55585c);
+  transition: color 220ms var(--ease-in-out, ease-in-out);
+}
+.cal-band__text {
+  font-family: var(--font-body, "Inter", system-ui, sans-serif);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 22px;
+  letter-spacing: 0.01em;
+  color: inherit;
+  white-space: nowrap;
+}
+
+/* ── Нижній контейнер ───────────────────────────────────────── */
+/* Статичний — не рухається ніколи. Форма зібрана з трьох частин,
+   як у Figma: два бічні вектори, що сходяться догори, і прямокутник
+   між ними. Частини перекриваються на 0.5px, інакше на стиках
+   вилазить світла волосина від згладжування. */
+.cal-page {
+  position: absolute;
+  top: 28px;
+  left: -1px;
+  width: 62px;
+  height: 32px;
+}
+.cal-shape {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 60px;
+  height: 26px;
+  filter:
+    drop-shadow(0 1px 1px rgba(0, 0, 0, 0.04))
+    drop-shadow(0 3px 3px rgba(0, 0, 0, 0.03))
+    drop-shadow(0 7px 4px rgba(0, 0, 0, 0.02));
+}
+.cal-shape path,
+.cal-shape rect { fill: var(--background, #fcfdfd); }
+
+.cal-numbers {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 60px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  /* Колір теж на батькові — з тієї ж причини, що й у плашці:
+     не залишати на елементі зі сніпетом власних motion-декларацій. */
+  color: var(--foreground, #030a16);
+  transition: color 220ms var(--ease-in-out, ease-in-out);
+}
+.cal-day {
+  font-family: var(--font-heading, "Urbanist", system-ui, sans-serif);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 26px;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Стан «не поточний місяць» ──────────────────────────────────
+   Рамка гасне до нейтральної, число стає вторинним: іконка
+   перестає означати «сьогодні» й каже про це прямо. */
+.cal-icon[data-current="false"] { --frame: var(--disabled-foreground, #c8cbce); }
+.cal-icon[data-current="false"] .cal-numbers { color: var(--muted-foreground, #55585c); }
+.cal-icon[data-current="false"] .cal-band { color: var(--subtle-foreground, #8f9397); }

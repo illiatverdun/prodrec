@@ -1240,7 +1240,8 @@ body {
 .sum, .tabs { display: none; }
 
 @media (max-width: 645px) {
-  .page { padding-block-end: calc(102px + env(safe-area-inset-bottom)); }
+  /* Nav bar is ~110px tall; the last calendar row or receipt line scrolls 24px clear of it. */
+  .page { padding-block-end: calc(126px + env(safe-area-inset-bottom)); }
   /* Mobile logs hours in the day drawer. The 340px popover, invisible but laid out,
      widened the page past a 320px screen and pushed the Nav bar off the edge. */
   .hpop { display: none; }
