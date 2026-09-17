@@ -1277,6 +1277,9 @@ body {
   .sum__line--projects { gap: 16px; }
   .sum__muted { color: var(--text-tertiary); }
   .sum__fig { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .sum__add { margin: -4px -8px; padding: 4px 8px; border: 0; border-radius: 12px; background: none; color: inherit; font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .sum__add:active { background: var(--bg-subtle); }
+  .sum__add:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
   .sum__icon { display: block; inline-size: 24px; block-size: 24px; margin: 2px; rotate: var(--tilt, 0deg); }
   .sum__avatars { display: flex; align-items: center; }
   .sum__avatar {

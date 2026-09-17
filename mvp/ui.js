@@ -71,6 +71,25 @@
   }
   const isOpen = (el) => el.classList.contains("is-open");
 
+  /* Page scroll lock while a sheet or modal is open. iOS Safari still scrolls the page under
+     `overflow: hidden`, so the body is pinned with position: fixed and put back where it was. */
+  const locks = new Set();
+  let lockedY = 0;
+  function lockPage(key, on) {
+    const was = locks.size > 0;
+    if (on) locks.add(key); else locks.delete(key);
+    const now = locks.size > 0;
+    if (was === now) return;
+    const s = document.body.style;
+    if (now) {
+      lockedY = window.scrollY;
+      Object.assign(s, { position: "fixed", top: `${-lockedY}px`, left: "0", right: "0" });
+    } else {
+      Object.assign(s, { position: "", top: "", left: "", right: "" });
+      window.scrollTo(0, lockedY);
+    }
+  }
+
   /* Every float on the page registers a closer, so opening one closes the rest. */
   const floats = new Set();
   const closeFloats = (except) => floats.forEach((fn) => fn !== except && fn());
@@ -166,12 +185,14 @@
         input.value = "";
         render();
         openFloat(pop);
+        if (phone.matches) lockPage(pop, true);
         const sel = list.querySelector('[aria-selected="true"]');
         if (sel) sel.scrollIntoView({ block: "nearest" });
         // On a phone the picker is a sheet: focusing search would throw up the keyboard over six options.
         if (!phone.matches) input.focus({ preventScroll: true });
       } else {
         closeFloat(pop);
+        lockPage(pop, false);
         if (pop.contains(document.activeElement)) toggle.focus({ preventScroll: true });
       }
       toggle.setAttribute("aria-expanded", String(open));
@@ -238,6 +259,7 @@
     layer.appendChild(dialog);
     layer.hidden = false;
     document.documentElement.classList.add("has-modal");
+    lockPage("modal", true);
     if (window.DS) DS.init(dialog);
     current = { dialog, onClose };
     void dialog.offsetWidth;
@@ -259,7 +281,7 @@
     setTimeout(() => dialog.remove(), ms);
     if (!keepLayer) {
       layer.classList.remove("is-open");
-      closeTimer = setTimeout(() => { if (!current) { layer.hidden = true; document.documentElement.classList.remove("has-modal"); } }, ms);
+      closeTimer = setTimeout(() => { if (!current) { layer.hidden = true; document.documentElement.classList.remove("has-modal"); lockPage("modal", false); } }, ms);
       if (restore && returnFocus && document.contains(returnFocus)) returnFocus.focus({ preventScroll: true });
     }
     if (onClose) onClose();

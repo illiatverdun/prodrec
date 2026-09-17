@@ -535,7 +535,7 @@
     switch (act.dataset.act) {
       case "time": showTime(id); break;
       case "edit": modals.project(id, { onSaved: () => reopenDay(key) }); break;
-      case "new": modals.project(null, { onSaved: (p) => reopenDay(key, { projectId: p.id }) }); break;
+      case "new": modals.project(null, { onSaved: () => reopenDay(key) }); break; // back to the project list, not straight to hours
       case "back": renderDay(); break;
       case "add":
         store.setHours([key], daySheet.projectId, daySheet.value);
@@ -783,6 +783,7 @@
     renderProjects(true);
   });
   $("#proj-add").addEventListener("click", () => modals.project());
+  $("#sum-add").addEventListener("click", () => modals.project()); // mobile summary: tap the project count
   $("#proj-more").addEventListener("click", () => { projOpen = true; renderProjects(true); $("#proj-less").focus({ preventScroll: true }); });
   $("#proj-less").addEventListener("click", () => { projOpen = false; renderProjects(true); });
 
