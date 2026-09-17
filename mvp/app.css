@@ -1241,6 +1241,9 @@ body {
 
 @media (max-width: 645px) {
   .page { padding-block-end: calc(102px + env(safe-area-inset-bottom)); }
+  /* Mobile logs hours in the day drawer. The 340px popover, invisible but laid out,
+     widened the page past a 320px screen and pushed the Nav bar off the edge. */
+  .hpop { display: none; }
 
   .hdr { block-size: 50px; padding: 8px 16px; background: var(--bg-card); }
   .logo__word { display: none; }
@@ -1596,6 +1599,9 @@ body {
     opacity var(--dropdown-close-dur) var(--dropdown-ease),
     scale var(--dropdown-close-dur) var(--dropdown-ease);
 }
+/* `display: grid` beats the `hidden` attribute: a closed popover still sat below the page
+   and added ~160px of empty scroll on mobile. */
+.pop[hidden] { display: none; }
 .pop.is-open {
   opacity: 1;
   scale: 1;
