@@ -2,7 +2,7 @@
    Signed out, nothing changes: data lives in localStorage as before.
    Signed in, the whole state is one document, users/{uid}, and every commit is pushed to it.
    Firestore rules (set in the console) let a user read and write only their own document,
-   and only create documents in feedback/.
+   and anyone create a document in feedback/ (text up to 4000 characters).
    The config below is public by design: it identifies the project, the rules guard the data. */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithCredential, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
@@ -124,13 +124,13 @@ function openFeedback() {
   const send = el.querySelector("#fb-send");
   input.addEventListener("input", () => { send.disabled = !input.value.trim(); });
   send.addEventListener("click", async () => {
-    const user = auth.currentUser;
+    const user = auth.currentUser; // optional: anyone can leave feedback, the account is attached when there is one
     const text = input.value.trim();
-    if (!user || !text) return;
+    if (!text) return;
     send.disabled = true;
     try {
       await addDoc(collection(db, "feedback"), {
-        text, uid: user.uid, email: user.email || "", createdAt: serverTimestamp(),
+        text, uid: user ? user.uid : "", email: user ? user.email || "" : "", createdAt: serverTimestamp(),
         page: location.pathname, agent: navigator.userAgent,
       });
       ui.closeModal();
@@ -236,20 +236,13 @@ function logIn() {
 }
 loginBtn.addEventListener("click", logIn);
 
-/* Footer "here" (desktop and tablet) opens the same feedback modal. Feedback needs an account,
-   so a signed-out tap logs in first and the modal opens once the login lands. */
-let feedbackAfterLogin = false;
-$("#foot-feedback").addEventListener("click", () => {
-  if (auth.currentUser) { openFeedback(); return; }
-  feedbackAfterLogin = !demo;
-  logIn();
-});
+// Footer "here" (desktop and tablet) opens the same feedback modal, signed in or not.
+$("#foot-feedback").addEventListener("click", openFeedback);
 
 onAuthStateChanged(auth, async (user) => {
   renderHeader(user);
   if (demo) return;
   disconnect();
   if (!user) return;
-  if (feedbackAfterLogin) { feedbackAfterLogin = false; openFeedback(); }
   try { await connect(user); } catch (err) { disconnect(); fail("Couldn't load your account", err); }
 });
