@@ -18,9 +18,9 @@
         <img class="logo__mark" src="../design-system/assets/images/prodrec-logo.png" alt="" width="40" height="40">
         <span class="logo__word">prod.rec</span>
       </a>
-      <!-- D-009: Google login skipped -->
-      <button class="ds-btn" data-type="secondary" data-variant="surface" data-size="md" type="button">
-        <span class="ds-icon"><img src="assets/google.svg" alt=""></span><span>Log in</span>
+      <!-- Google login · sync.js, D-015 -->
+      <button class="ds-btn" data-type="secondary" data-variant="surface" data-size="md" type="button" id="login" disabled>
+        <span class="ds-icon"><img src="assets/google.svg" alt="" data-icon></span><span data-label>Log in</span>
       </button>
     </header>
 
@@ -261,5 +261,6 @@
   <script src="ui.js"></script>
   <script src="modals.js"></script>
   <script src="app.js"></script>
+  <script type="module" src="sync.js"></script>
 </body>
 </html>
