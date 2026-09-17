@@ -1322,6 +1322,7 @@ body {
   .menu { order: 1; }
   .cal-nav { order: 2; flex: 1 0 100%; }
   .cal-nav #today { flex: 1; }
+  .bill > .cal-nav { order: 0; flex: none; } /* on the Billing tab it sits right under the title, in the column */
   .cal-icon { zoom: calc(50 / 60); } /* 50px icon on mobile */
 
   /* Days · 5 columns of 67px or 7 of 47px (288:39090), 2px gaps both ways. */
@@ -1482,6 +1483,7 @@ body {
     padding-block-end: calc(20px + env(safe-area-inset-bottom));
     border-radius: 32px 32px 0 0;
     overflow-y: auto;
+    overflow-x: hidden; /* .dsheet__bg sticks out 39px; without this iOS pans the whole sheet sideways */
     overscroll-behavior: contain;
   }
   .t-modal:not(.modal--confirm),
@@ -1548,6 +1550,8 @@ body {
   .dsheet__foot .ds-btn { flex: 1; block-size: 40px; }
   .dsheet__foot .ds-btn img { inline-size: 24px; block-size: 24px; }
 
+  /* The hours view fits without scrolling; clip (unlike hidden) leaves nothing iOS can pan. */
+  .modal.dsheet[data-mode="time"] { overflow: clip; }
   .dsheet__bg { position: absolute; right: -39px; bottom: -5px; inline-size: 159px; block-size: 127px; rotate: -17.36deg; pointer-events: none; }
   .dsheet__who { display: flex; align-items: center; gap: 12px; min-inline-size: 0; }
   .dsheet__name { overflow: hidden; margin: 0; font: var(--ts-headline-h6-semibold); color: var(--text-primary); text-overflow: ellipsis; white-space: nowrap; }

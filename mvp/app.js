@@ -943,6 +943,7 @@
   const TAB_KEY = "prodrec.mvp.tab";
   const onbFold = $("#onb-fold");
   const calLead = $(".cal-head__lead");
+  const calNav = $(".cal-nav");
   let tab = "calendar";
   try { if (localStorage.getItem(TAB_KEY) === "billing") tab = "billing"; } catch (e) { /* storage blocked */ }
 
@@ -952,6 +953,10 @@
     if (!m && onbFold.parentElement !== $(".side")) $(".side").prepend(onbFold);
     const leadHome = m && tab === "billing" ? $(".bill .card__title") : $(".cal-head");
     if (calLead.parentElement !== leadHome) leadHome.prepend(calLead);
+    // Month arrows follow the title, so Billing can switch months too.
+    const onBill = m && tab === "billing";
+    if (onBill && calNav.parentElement !== $(".bill")) $(".bill .card__title").after(calNav);
+    if (!onBill && calNav.parentElement !== $(".cal-head__actions")) $(".cal-head__actions").prepend(calNav);
     const extraHome = m ? $(".page") : $(".cal");
     if (extra.parentElement !== extraHome) extraHome.appendChild(extra);
   }
