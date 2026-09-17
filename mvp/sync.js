@@ -223,7 +223,7 @@ function getTokenClient() {
 }
 
 // No await before the popup opens: Safari only allows pop-ups straight from the tap.
-loginBtn.addEventListener("click", () => {
+function logIn() {
   if (demo) { ui.toast({ title: "Demo data isn't saved. Open the page without ?demo to log in" }); return; }
   const client = getTokenClient();
   if (client) { client.requestAccessToken({ prompt: "select_account" }); return; }
@@ -233,6 +233,16 @@ loginBtn.addEventListener("click", () => {
   signInWithPopup(auth, provider).catch((err) => {
     if (err.code !== "auth/popup-closed-by-user" && err.code !== "auth/cancelled-popup-request") fail("Couldn't log in. Try again", err);
   });
+}
+loginBtn.addEventListener("click", logIn);
+
+/* Footer "here" (desktop and tablet) opens the same feedback modal. Feedback needs an account,
+   so a signed-out tap logs in first and the modal opens once the login lands. */
+let feedbackAfterLogin = false;
+$("#foot-feedback").addEventListener("click", () => {
+  if (auth.currentUser) { openFeedback(); return; }
+  feedbackAfterLogin = !demo;
+  logIn();
 });
 
 onAuthStateChanged(auth, async (user) => {
@@ -240,5 +250,6 @@ onAuthStateChanged(auth, async (user) => {
   if (demo) return;
   disconnect();
   if (!user) return;
+  if (feedbackAfterLogin) { feedbackAfterLogin = false; openFeedback(); }
   try { await connect(user); } catch (err) { disconnect(); fail("Couldn't load your account", err); }
 });
