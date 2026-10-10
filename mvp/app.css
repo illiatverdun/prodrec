@@ -893,7 +893,7 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
   background: none;
   font: var(--ts-body-lg-regular);
   text-align: start;
-  cursor: copy;
+  cursor: pointer; /* not `copy`: some systems draw it as a broken arrow (Illia, 2026-10-10) */
 }
 .receipt__pname { overflow: hidden; color: var(--text-secondary); text-overflow: ellipsis; white-space: nowrap; transition: color var(--duration-quick) var(--ease-smooth-out); }
 .receipt__proj:hover .receipt__pname { color: var(--text-primary); }
@@ -919,7 +919,7 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
 /* Copy icon only while the Billing card is hovered or focused: it slides out from under the amount
    (the slot clips it), with fade and blur on smooth-out, rows staggered. Hover out is quicker.
    Touch screens have no hover, so the icon stays put there. */
-.copy-slot { display: inline-flex; overflow: clip; overflow-clip-margin: 2px; }
+.copy-slot { display: inline-flex; overflow: clip; overflow-clip-margin: 2px; pointer-events: none; } /* the row takes the click; the icon can't be dragged */
 @media (hover: hover) {
   .copy-slot .copy-swap {
     opacity: 0;
