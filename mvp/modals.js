@@ -181,6 +181,7 @@
 
   function requestDelete(id) {
     const p = store.project(id);
+    if (p.archived) { confirmArchivedDelete(id); return; } // opened from the Archived list: no "Archive" offer
     const h = store.projectAllTime(p).hours;
     if (h > 0) { confirmHistory(p, h); return; }
     deleteWithUndo(p);

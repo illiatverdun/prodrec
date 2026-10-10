@@ -194,6 +194,7 @@ body {
   --day-stroke: var(--border-default-60);
   --day-card: var(--bg-card);
   --day-card-shadow: var(--effect-popover-shadow-soft);
+  --day-shade: 1;
   --day-stripes: 0;
   --day-num: var(--text-secondary);
   --day-dur: var(--duration-fast);
@@ -227,6 +228,19 @@ body {
   transition:
     background-color var(--day-dur) var(--ease-smooth-out),
     box-shadow var(--day-dur) var(--ease-smooth-out);
+}
+/* Figma paints the card's shadow under its translucent fill as well; box-shadow never paints under
+   its own box. This layer is that hidden part of popover_shadow_soft, its offsets (1, 3, 6, 11px)
+   stacked from the top edge. Seen only through the 80% card on hover, as in Figma 113:8714. */
+.day__card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(rgb(0 0 0 / 0) 0, rgb(0 0 0 / 0.039) 2px, rgb(0 0 0 / 0.069) 4.5px, rgb(0 0 0 / 0.088) 8.5px, rgb(0 0 0 / 0.098) 13px);
+  opacity: var(--day-shade);
+  pointer-events: none;
 }
 /* Today pattern · Figma 21:6079: a #FFC7FF line, tile scaled to 0.41, fill at 16%. */
 .day__card::before {
@@ -292,6 +306,7 @@ body {
   --day-bg: var(--bg-secondary-20);
   --day-card: var(--bg-card-50);
   --day-card-shadow: none;
+  --day-shade: 0;
 }
 
 .day:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
@@ -812,6 +827,9 @@ body {
   background: var(--bg-card);
   box-shadow: var(--effect-popover-shadow-soft);
 }
+/* Archived row: the whole card opens Edit project. */
+button.pitem__info { border: 0; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
 .pitem__who { display: flex; align-items: center; gap: 8px; min-inline-size: 0; }
 .pitem__avatar {
   flex: none;
@@ -1471,7 +1489,8 @@ body {
   .arch:not([hidden]) { display: flex; flex-direction: column; gap: 10px; padding-block-start: 24px; }
   .arch__label { margin: 0; padding-inline-start: 4px; font: var(--ts-body-md-medium); color: var(--text-tertiary); }
   .arch__list { display: flex; flex-direction: column; gap: 8px; }
-  .arch__main { display: flex; flex: 1; align-items: center; min-inline-size: 0; padding: 12px; }
+  .arch__main { display: flex; flex: 1; align-items: center; min-inline-size: 0; padding: 12px; border: 0; border-radius: 12px; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .arch__main:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
   .ds-icon-btn.arch__btn { flex: none; inline-size: 48px; block-size: 48px; border-radius: 16px; }
   .ds-icon-btn.arch__btn img { inline-size: 24px; block-size: 24px; }
 

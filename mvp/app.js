@@ -210,7 +210,7 @@
     const keys = rangeKeys();
     if (!keys.length) return;
     if (mobile.matches) { clearRange(); openDay(keys[0]); return; }
-    if (store.active().length) openHours(keys, drag.end);
+    if (store.active().length || archivedOn(keys).length) openHours(keys, drag.end);
     else openPop(keys, drag.end);
   });
   // A touch that turns into a scroll is cancelled by the browser: no selection, no drawer.
@@ -259,14 +259,21 @@
 
   const hpop = $("#hpop");
   const hlist = $("#hpop-list");
-  let hours = null; // { keys, anchorKey, drafts: Map(projectId → hours) }
+  let hours = null; // { keys, anchorKey, drafts: Map(projectId → hours), keep: Set(archived projectId) }
   const clampHours = (v) => Math.min(24, Math.max(0.5, Math.round(v * 2) / 2));
+  /* An archived project is hidden from new days only: on every day it was logged its hours stay
+     editable, in the popover and the mobile drawer alike. Its row stays until they close, so a
+     removal can be put back with the same button. */
+  const archivedOn = (keys) => store.archived().filter((p) => keys.every((k) => store.dayEntries(k).some((e) => e.projectId === p.id)));
+  const keepIds = (keys) => new Set(archivedOn(keys).map((p) => p.id));
+  const hoursProjects = () => [...store.active(), ...store.archived().filter((p) => hours.keep.has(p.id))];
 
   function openHours(keys, anchorKey) {
     const cell = grid.querySelector(`[data-key="${anchorKey}"]`);
     if (!cell) return;
     ui.closeFloats(closeHoursFloat);
-    hours = { keys, anchorKey, drafts: hours && hours.anchorKey === anchorKey ? hours.drafts : new Map() };
+    const same = hours && hours.anchorKey === anchorKey;
+    hours = { keys, anchorKey, drafts: same ? hours.drafts : new Map(), keep: new Set([...(same ? hours.keep : []), ...keepIds(keys)]) };
     const d = new Date(`${anchorKey}T00:00:00`);
     hpop.setAttribute("aria-label", keys.length > 1 ? `Hours for ${keys.length} days` : `Hours for ${d.getDate()} ${MONTHS_LONG[d.getMonth()]}`);
     hlist.innerHTML = "";
@@ -286,7 +293,7 @@
 
   function renderHours() {
     if (!hours) return;
-    const projects = store.active();
+    const projects = hoursProjects();
     const existing = new Map([...hlist.children].map((row) => [row.dataset.id, row]));
     projects.forEach((p) => {
       const { selected, value } = projectState(p);
@@ -387,7 +394,7 @@
      0.5–16; the big number opens the keyboard for any value up to 24. Hours of a project already on the day
      save as the ruler stops; Clear day removes only that project, with Reset in the toast. */
 
-  let daySheet = null; // { el, key, mode: "list" | "time", projectId, value, added }
+  let daySheet = null; // { el, key, mode: "list" | "time", projectId, value, added, keep }
   const RULER_MAX = 16;
   const HOUR_PX = 40; // 10 ticks of 4px per hour
   const dayTitle = (key) => { const d = new Date(`${key}T00:00:00`); return `${MONTHS_LONG[d.getMonth()]} ${d.getDate()}`; };
@@ -396,7 +403,7 @@
     const el = document.createElement("div");
     el.className = "dsheet";
     el.setAttribute("aria-label", dayTitle(key));
-    daySheet = { el, key, mode: "list", projectId: null, value: store.DEFAULT_HOURS, added: false };
+    daySheet = { el, key, mode: "list", projectId: null, value: store.DEFAULT_HOURS, added: false, keep: keepIds([key]) };
     el.addEventListener("click", onDayClick);
     ui.openModal(el, { initialFocus: "[data-sheet-title]", onClose: () => { if (daySheet && daySheet.el === el) daySheet = null; } });
     if (projectId) showTime(projectId);
@@ -408,8 +415,8 @@
   function renderDay() {
     const { el, key } = daySheet;
     daySheet.mode = "list";
-    const active = store.active();
-    const entries = store.dayEntries(key).filter((e) => { const p = store.project(e.projectId); return p && !p.archived; });
+    const active = [...store.active(), ...store.archived().filter((p) => daySheet.keep.has(p.id))];
+    const entries = store.dayEntries(key).filter((e) => store.project(e.projectId));
     const onDay = new Map(entries.map((e) => [e.projectId, e.hours]));
     const total = entries.reduce((a, e) => a + e.hours, 0);
     const row = (p) => {
@@ -677,10 +684,10 @@
       : `<button class="pitem__edit" type="button" data-act="edit" aria-label="Edit ${ui.esc(p.name)}"><img src="assets/settings.svg" alt="" width="20" height="20"></button>`;
     return `
       <div class="pitem" data-id="${p.id}"${archived ? " data-archived" : ""}>
-        <div class="pitem__info">
+        ${archived ? `<button class="pitem__info" type="button" data-act="edit" aria-label="Edit ${ui.esc(p.name)}">` : `<div class="pitem__info">`}
           <span class="pitem__who"><img class="pitem__avatar" src="${ui.avatarSrc(p.avatar)}" alt=""><span class="pitem__name">${ui.esc(p.name)}</span></span>
           ${archived ? "" : `<span class="pitem__stat"></span>`}
-        </div>
+        ${archived ? "</button>" : "</div>"}
         ${actions}
       </div>`;
   }
@@ -788,13 +795,13 @@
   $("#proj-less").addEventListener("click", () => { projOpen = false; renderProjects(true); });
 
   /* Archived projects · mobile, Figma 288:39424. [?] Restore is immediate with Reset in the toast;
-     delete goes through the same confirmation as the Archived tab on desktop. */
+     delete goes through the same confirmation as the Archived tab on desktop. Tap the row: Edit project. */
   function renderArchive() {
     const list = store.archived();
     $("#arch").hidden = !list.length;
     $("#arch-list").innerHTML = list.map((p) => `
       <div class="drow arch__row" data-id="${p.id}">
-        <span class="arch__main"><span class="drow__who"><img class="drow__avatar" src="${ui.avatarSrc(p.avatar)}" alt=""><span class="drow__name">${ui.esc(p.name)}</span></span></span>
+        <button class="arch__main" type="button" data-act="edit" aria-label="Edit ${ui.esc(p.name)}"><span class="drow__who"><img class="drow__avatar" src="${ui.avatarSrc(p.avatar)}" alt=""><span class="drow__name">${ui.esc(p.name)}</span></span></button>
         <button class="ds-icon-btn arch__btn" data-type="secondary" data-variant="ghost" type="button" data-act="restore" aria-label="Restore ${ui.esc(p.name)}"><img src="assets/restore-24.svg" alt="" width="24" height="24"></button>
         <button class="ds-icon-btn arch__btn" data-type="secondary" type="button" data-act="delete" aria-label="Delete ${ui.esc(p.name)}"><img src="assets/delete-24-red.svg" alt="" width="24" height="24"></button>
       </div>`).join("");
@@ -803,6 +810,7 @@
     const btn = e.target.closest("[data-act]");
     if (!btn) return;
     const p = store.project(btn.closest(".arch__row").dataset.id);
+    if (btn.dataset.act === "edit") { modals.project(p.id); return; }
     if (btn.dataset.act === "delete") { modals.confirmArchivedDelete(p.id); return; }
     const snap = store.snapshot();
     store.archiveProject(p.id, false);
@@ -1073,7 +1081,7 @@
     renderArchive();
     if (daySheet && (daySheet.mode === "list" || !store.project(daySheet.projectId))) renderDay();
     if (hours) {
-      if (!store.active().length) closeDayPopovers();
+      if (!hoursProjects().length) closeDayPopovers();
       else renderHours();
     }
   });
