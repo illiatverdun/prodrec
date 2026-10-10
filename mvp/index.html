@@ -212,7 +212,7 @@
                 <div class="receipt__row">
                   <span class="receipt__label">Total amount</span>
                   <span class="receipt__total">
-                    <span class="chip" data-color="green"><span id="bill-hours"></span>&nbsp;h.</span>
+                    <button class="chip receipt__hours" data-color="green" type="button" id="bill-hours-btn" disabled><span id="bill-hours"></span><span class="receipt__extra" id="bill-extra-wrap" hidden>+<span id="bill-extra"></span></span>&nbsp;h.</button>
                     <span class="receipt__amount"><span data-cur-symbol>$</span>&nbsp;<span id="bill-total"></span></span>
                   </span>
                 </div>
@@ -225,8 +225,7 @@
                 </div>
                 <div class="barcode" aria-hidden="true">
                   <div class="barcode__bars" id="barcode"></div>
-                  <!-- D-009: daily generated text skipped -->
-                  <p class="barcode__note">Grow up everyday!</p>
+                  <p class="barcode__note" id="barcode-note">Grow up everyday!</p>
                 </div>
               </div>
               <svg class="receipt__edge" width="100%" height="8.5" aria-hidden="true">

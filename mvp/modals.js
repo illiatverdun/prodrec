@@ -11,8 +11,8 @@
   const closeBtn = `<button class="ds-icon-btn" data-type="secondary" type="button" aria-label="Close" data-close><img src="assets/close-14.svg" alt="" width="14" height="14"></button>`;
   const separator = `<span class="ds-separator" role="presentation"></span>`;
 
-  function field({ id, placeholder, value = "", inputmode, cls = "" }) {
-    return `<div class="ds-field ${cls}" data-size="md" data-width="fill"><div class="ds-field__control"><span class="ds-field__slot"><input class="ds-field__input" id="${id}" type="text" placeholder="${esc(placeholder)}" value="${esc(value)}" autocomplete="off"${inputmode ? ` inputmode="${inputmode}"` : ""}></span></div></div>`;
+  function field({ id, placeholder, value = "", inputmode, cls = "", disabled = false }) {
+    return `<div class="ds-field ${cls}" data-size="md" data-width="fill"${disabled ? " data-disabled" : ""}><div class="ds-field__control"><span class="ds-field__slot"><input class="ds-field__input" id="${id}" type="text" placeholder="${esc(placeholder)}" value="${esc(value)}" autocomplete="off"${inputmode ? ` inputmode="${inputmode}"` : ""}${disabled ? " disabled" : ""}></span></div></div>`;
   }
 
   const parseNum = (v) => {
@@ -25,6 +25,8 @@
   /* opts.onSaved(project) runs after Create / Save closes the modal, e.g. to return to the mobile day drawer. */
   function projectModal(projectId, opts = {}) {
     const editing = projectId ? store.project(projectId) : null;
+    // [?] Archived: everything locked (DS disabled state, no lock frame in Figma); Unarchive leads, Delete stays.
+    const locked = !!(editing && editing.archived);
     const draft = editing
       ? { name: editing.name, rate: editing.rate, currency: editing.currency, avatar: editing.avatar }
       : { name: "", rate: "", currency: store.state.currency, avatar: store.AVATARS[0] };
@@ -42,7 +44,7 @@
           ${editing ? "" : `<img class="modal__avatar" id="pm-head-avatar" src="${ui.avatarSrc(draft.avatar)}" alt="" width="24" height="24">`}
           <div class="modal__titles">
             <h2 class="modal__h" id="pm-title">${editing ? "Edit project" : "New project"}</h2>
-            ${editing ? `<p class="modal__sub">Changes apply to every month, past and future.</p>` : ""}
+            ${editing ? `<p class="modal__sub">${locked ? "Archived. Unarchive it to make changes." : "Changes apply to every month, past and future."}</p>` : ""}
           </div>
         </div>
         ${closeBtn}
@@ -62,13 +64,13 @@
       <div class="pm-form">
         <div class="pm-row">
           <label class="pm-label" for="pm-name">Project name</label>
-          ${field({ id: "pm-name", placeholder: nextName, value: draft.name })}
+          ${field({ id: "pm-name", placeholder: nextName, value: draft.name, disabled: locked })}
         </div>
         <div class="pm-row">
           <label class="pm-label" for="pm-rate">Hour rate</label>
-          ${field({ id: "pm-rate", placeholder: "0", value: draft.rate === "" ? "" : String(draft.rate), inputmode: "decimal", cls: "pm-rate" })}
+          ${field({ id: "pm-rate", placeholder: "0", value: draft.rate === "" ? "" : String(draft.rate), inputmode: "decimal", cls: "pm-rate", disabled: locked })}
           <div class="cur pm-cur">
-            <button class="cur-select" type="button" aria-label="Rate currency"><span class="cur-select__sym"></span><span class="cur-select__code"></span><img src="assets/selector-14.svg" alt="" width="14" height="14"></button>
+            <button class="cur-select" type="button" aria-label="Rate currency"${locked ? " disabled" : ""}><span class="cur-select__sym"></span><span class="cur-select__code"></span><img src="assets/selector-14.svg" alt="" width="14" height="14"></button>
             ${ui.pickerMarkup("pm-cur__pop")}
           </div>
         </div>
@@ -77,7 +79,9 @@
       <div class="modal__foot">
         ${editing
           ? `<button class="ds-btn" data-type="secondary" data-size="lg" type="button" id="pm-delete"><img src="assets/delete-24.svg" alt="" width="24" height="24"><span>Delete</span></button>
-             <button class="ds-btn" data-size="lg" type="button" id="pm-submit" disabled>Save changes</button>`
+             ${locked
+               ? `<button class="ds-btn" data-size="lg" type="button" id="pm-unarchive"><img src="assets/restore-24-white.svg" alt="" width="24" height="24"><span>Unarchive</span></button>`
+               : `<button class="ds-btn" data-size="lg" type="button" id="pm-submit" disabled>Save changes</button>`}`
           : `<button class="ds-btn" data-type="secondary" data-size="lg" type="button" data-close data-cancel>Cancel</button>
              <button class="ds-btn" data-size="lg" type="button" id="pm-submit">Create project</button>`}
       </div>`;
@@ -89,10 +93,11 @@
     let custom = draft.avatar && draft.avatar.startsWith("data:") ? draft.avatar : null;
 
     function renderAvatars() {
-      const tile = (value, src, label) => `<button class="pm-avatar t-avatar" type="button" role="radio" aria-checked="${draft.avatar === value}" aria-label="${esc(label)}" data-avatar="${esc(value)}"><img src="${src}" alt=""></button>`;
+      const off = locked ? " disabled" : "";
+      const tile = (value, src, label) => `<button class="pm-avatar t-avatar" type="button" role="radio" aria-checked="${draft.avatar === value}" aria-label="${esc(label)}" data-avatar="${esc(value)}"${off}><img src="${src}" alt=""></button>`;
       const first = custom
         ? tile(custom, custom, "Uploaded picture").replace('data-avatar', 'data-custom data-avatar')
-        : `<button class="ds-icon-btn pm-upload t-avatar" data-type="secondary" data-size="lg" type="button" aria-label="Upload picture" data-upload><img src="assets/upload.svg" alt="" width="20" height="20"></button>`;
+        : `<button class="ds-icon-btn pm-upload t-avatar" data-type="secondary" data-size="lg" type="button" aria-label="Upload picture" data-upload${off}><img src="assets/upload.svg" alt="" width="20" height="20"></button>`;
       avatars.innerHTML = first + store.AVATARS.map((a) => tile(a, ui.avatarSrc(a), `${a} picture`)).join("");
     }
     function pickAvatar(value) {
@@ -119,7 +124,7 @@
       } catch (err) { /* unreadable image: keep the current picture */ }
       file.value = "";
     });
-    ui.bindAvatarHover(avatars, ".pm-avatars");
+    if (!locked) ui.bindAvatarHover(avatars, ".pm-avatars");
     renderAvatars();
 
     const curRoot = $(".pm-cur");
@@ -153,7 +158,7 @@
     // Save changes stays disabled (Figma 292:107119, 50%) until something actually differs.
     const norm = (d) => JSON.stringify({ name: String(d.name).trim(), rate: d.rate === "" ? "" : parseNum(d.rate), currency: d.currency, avatar: d.avatar });
     function sync() {
-      if (!editing) return;
+      if (!editing || locked) return;
       submit.disabled = norm(draft) === norm(JSON.parse(initial));
     }
 
@@ -165,16 +170,26 @@
       ui.closeModal();
       if (opts.onSaved) opts.onSaved(saved);
     }
-    submit.addEventListener("click", done);
-    el.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && e.target.matches(".pm-form input") && !submit.disabled) { e.preventDefault(); done(); }
-    });
+    if (submit) {
+      submit.addEventListener("click", done);
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && e.target.matches(".pm-form input") && !submit.disabled) { e.preventDefault(); done(); }
+      });
+    }
 
     if (editing) {
       $("#pm-delete").addEventListener("click", () => requestDelete(editing.id));
     }
+    if (locked) {
+      $("#pm-unarchive").addEventListener("click", () => {
+        const snap = store.snapshot();
+        store.archiveProject(editing.id, false);
+        ui.closeModal();
+        ui.toast({ title: `${editing.name} restored`, onAction: () => store.restore(snap) });
+      });
+    }
 
-    ui.openModal(el, { initialFocus: "#pm-name" });
+    ui.openModal(el, { initialFocus: locked ? "#pm-unarchive" : "#pm-name" });
   }
 
   /* ───── Delete: no history → delete now with an undo toast; history → confirmation ───── */
@@ -503,7 +518,8 @@
     el.querySelector("#eh-save").addEventListener("click", () => {
       // Commit a value still being typed.
       if (document.activeElement && document.activeElement.matches(".hstep__input")) document.activeElement.blur();
-      const extraHours = {};
+      // Archived projects are not listed, so their saved hours carry over untouched.
+      const extraHours = Object.fromEntries(Object.entries(saved).filter(([id]) => !draft.has(id)));
       draft.forEach((v, id) => { if (v > 0) extraHours[id] = v; });
       store.setMonthly(view, { extraHours });
       ui.closeModal();

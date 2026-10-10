@@ -22,10 +22,27 @@
   const isCurrentMonth = (d) => d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
   const sym = () => store.currency(state.currency).symbol;
 
+  /* Weekends are per month (Illia, 2026-10-10; D-013 had one switch for every month): working a weekend
+     is the exception. A month shows 7 days when a weekend day in it has hours, or when Weekends is
+     switched on for it in this session; otherwise Mon–Fri. Once shown, a month keeps its weekends for
+     the session, so clearing the last weekend day does not pull the cell away under the pointer. */
+  const weekendChoice = new Map(); // "YYYY-MM" → on / off, switched in the menu this session
+  const weekendShown = new Set(); // months already shown with weekends this session
+  function hasWeekendHours(v) {
+    const prefix = store.prefixOf(v);
+    return Object.entries(state.entries).some(([k, list]) => k.startsWith(prefix) && list.length && [0, 6].includes(new Date(`${k}T00:00:00`).getDay()));
+  }
+  function weekendsOn(v) {
+    const k = store.prefixOf(v);
+    const on = weekendChoice.has(k) ? weekendChoice.get(k) : weekendShown.has(k) || hasWeekendHours(v);
+    if (on) weekendShown.add(k);
+    return on;
+  }
+
   // Annotation I288:64844;93:1225: available days change with weekends, 5 → 7 days a week.
   function workdaysIn(d) {
     const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
-    if (state.weekends) return last;
+    if (weekendsOn(d)) return last;
     let n = 0;
     for (let i = 1; i <= last; i++) {
       const w = new Date(d.getFullYear(), d.getMonth(), i).getDay();
@@ -99,7 +116,7 @@
     const last = new Date(v.getFullYear(), v.getMonth() + 1, 0);
     const firstIdx = (first.getDay() + 6) % 7; // 0 = Monday
     const lastIdx = (last.getDay() + 6) % 7;
-    const week = state.weekends; // 7 days (Figma 292:91118) or Mon–Fri
+    const week = weekendsOn(v); // 7 days (Figma 292:91118) or Mon–Fri
     const start = new Date(first);
     start.setDate(first.getDate() + (!week && firstIdx > 4 ? 7 - firstIdx : -firstIdx));
     // Annotation 113:8558: always 6 lines, so the card keeps its height from month to month.
@@ -131,16 +148,16 @@
   let gridTimer;
   function renderGrid(dir, animate) {
     clearTimeout(gridTimer);
-    if (!animate || ui.reduced.matches) { grid.innerHTML = cellsFor(view, false); return; }
-    grid.style.setProperty("--dir", String(dir));
-    grid.classList.remove("is-enter-start");
-    grid.classList.add("is-exit");
+    if (!animate || ui.reduced.matches) { applyHead(); grid.innerHTML = cellsFor(view, false); return; }
+    // The weekday labels ride along when the next month has a different week.
+    const parts = days.dataset.week === (weekendsOn(view) ? "7" : "5") ? [grid] : [$(".days__head"), grid];
+    parts.forEach((el) => { el.style.setProperty("--dir", String(dir)); el.classList.remove("is-enter-start"); el.classList.add("is-exit"); });
     gridTimer = setTimeout(() => {
+      applyHead();
       grid.innerHTML = cellsFor(view, false);
-      grid.classList.remove("is-exit");
-      grid.classList.add("is-enter-start");
+      parts.forEach((el) => { el.classList.remove("is-exit"); el.classList.add("is-enter-start"); });
       void grid.offsetWidth;
-      grid.classList.remove("is-enter-start");
+      parts.forEach((el) => el.classList.remove("is-enter-start"));
     }, ui.cssMs("--duration-quick"));
   }
   /* Same month, new data: redraw in place and keep the selection. */
@@ -159,6 +176,7 @@
     closeDayPopovers();
     renderHeader(dir, true);
     renderGrid(dir, true);
+    renderWeekends();
     renderBilling(true);
     renderProjects(true);
     renderSummary(true);
@@ -301,7 +319,7 @@
       if (!row) {
         hlist.insertAdjacentHTML("beforeend", `
           <div class="hrow" data-id="${p.id}">
-            <div class="hrow__name"><img class="hrow__avatar" src="${ui.avatarSrc(p.avatar)}" alt=""><span class="hrow__label">${ui.esc(p.name)}</span></div>
+            <div class="hrow__name"><button class="hrow__pic" type="button" aria-label="Edit ${ui.esc(p.name)}"><img class="hrow__avatar t-avatar" src="${ui.avatarSrc(p.avatar)}" alt=""></button><span class="hrow__label">${ui.esc(p.name)}</span></div>
             <div class="hstep">
               <button class="ds-icon-btn" data-type="secondary" type="button" data-step="-1" aria-label="Fewer hours"><img src="assets/arrow-left-14.svg" alt="" width="14" height="14"></button>
               <label class="hstep__value"><input class="hstep__input" type="text" inputmode="decimal" autocomplete="off"><span aria-hidden="true">h.</span></label>
@@ -318,6 +336,7 @@
       hlist.appendChild(row);
       row.querySelector(".hrow__avatar").src = ui.avatarSrc(p.avatar);
       row.querySelector(".hrow__label").textContent = p.name;
+      row.querySelector(".hrow__pic").setAttribute("aria-label", `Edit ${p.name}`);
       row.toggleAttribute("data-selected", selected);
       const act = row.querySelector(".hrow__act");
       act.dataset.type = selected ? "secondary" : "";
@@ -352,6 +371,8 @@
     if (!row) return;
     const step = e.target.closest("[data-step]");
     const p = store.project(row.dataset.id);
+    // The avatar lifts on hover like the day's (transitions.dev 11) and opens Edit project.
+    if (e.target.closest(".hrow__pic")) { closeDayPopovers(); modals.project(p.id); return; }
     const { selected, value } = projectState(p);
     if (step) { setRowHours(row, value + Number(step.dataset.step), Number(step.dataset.step)); return; }
     if (e.target.closest(".hrow__act")) {
@@ -359,6 +380,7 @@
       else store.setHours(hours.keys, p.id, value);
     }
   });
+  ui.bindAvatarHover(hlist, ".hrow__pic");
   hlist.addEventListener("change", (e) => {
     if (!e.target.matches(".hstep__input")) return;
     const row = e.target.closest(".hrow");
@@ -587,9 +609,13 @@
      with the same blur as a month change, then settles into 7 or 5 columns. */
   const days = $(".days");
   const LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  function applyHead() {
+    const on = weekendsOn(view);
+    days.dataset.week = on ? "7" : "5";
+    $(".days__head").innerHTML = LABELS.slice(0, on ? 7 : 5).map((l) => `<span>${l}</span>`).join("");
+  }
   function applyWeek() {
-    days.dataset.week = state.weekends ? "7" : "5";
-    $(".days__head").innerHTML = LABELS.slice(0, state.weekends ? 7 : 5).map((l) => `<span>${l}</span>`).join("");
+    applyHead();
     grid.innerHTML = cellsFor(view, false);
     paintRange();
   }
@@ -609,8 +635,9 @@
   }
 
   function renderWeekends() {
-    weekendsSwitch.querySelector("input").checked = state.weekends;
-    weekendsItem.setAttribute("aria-checked", String(state.weekends));
+    const on = weekendsOn(view);
+    weekendsSwitch.querySelector("input").checked = on;
+    weekendsItem.setAttribute("aria-checked", String(on));
   }
 
   menuToggle.addEventListener("click", () => setMenu(!ui.isOpen(menuPop)));
@@ -622,7 +649,12 @@
     if (!item) return;
     if (item === weekendsItem) {
       weekendsSwitch.classList.add("is-init"); // toggle keyframes only after the first interaction
-      store.set("weekends", !state.weekends);
+      weekendChoice.set(store.prefixOf(view), !weekendsOn(view)); // this month only
+      renderWeekends();
+      closeDayPopovers();
+      swapWeek(true);
+      renderMeta(true);
+      renderSummary(true);
       return;
     }
     if (item.dataset.action === "clear") {
@@ -851,7 +883,7 @@
           <button class="receipt__proj" type="button" data-id="${ui.esc(row.id)}">
             <span class="receipt__pname"></span>
             <span class="receipt__pamount">
-              <span class="copy-swap" data-state="copy" aria-hidden="true"><img data-icon="copy" src="assets/copy.svg" alt="" width="16" height="16"><img data-icon="done" src="assets/check-circle.svg" alt="" width="16" height="16"></span>
+              <span class="copy-slot" aria-hidden="true"><span class="copy-swap" data-state="copy"><img data-icon="copy" src="assets/copy.svg" alt="" width="16" height="16"><img data-icon="done" src="assets/check-circle.svg" alt="" width="16" height="16"></span></span>
               <span class="receipt__pvalue"><span data-cur-symbol>${ui.esc(sym())}</span><span class="receipt__pnum"></span></span>
             </span>
           </button>`);
@@ -859,6 +891,7 @@
       }
       seen.delete(row.id);
       billProjects.appendChild(node);
+      node.style.setProperty("--i", String(billProjects.children.length - 1)); // copy icons slide out one after another
       node.querySelector(".receipt__pname").textContent = row.name;
       node.dataset.copy = row.amount.toFixed(2);
       node.setAttribute("aria-label", `Copy ${row.name}: ${sym()}${store.fmt.number(row.amount)}`);
@@ -866,7 +899,15 @@
     });
     seen.forEach((node) => node.remove());
 
-    ui.setNumber($("#bill-hours"), store.fmt.hours(m.hours), animate);
+    // Extra hours (321:54172) show apart from the calendar's, "16+2 h.", and the badge opens them.
+    const extraH = m.rows.reduce((sum, r) => sum + (r.extraHours || 0), 0);
+    const hoursBtn = $("#bill-hours-btn");
+    ui.setNumber($("#bill-hours"), store.fmt.hours(m.hours - extraH), animate);
+    $("#bill-extra-wrap").hidden = !extraH;
+    if (extraH) ui.setNumber($("#bill-extra"), store.fmt.hours(extraH), animate);
+    hoursBtn.disabled = !extraH;
+    if (extraH) hoursBtn.setAttribute("aria-label", `${store.fmt.hours(m.hours - extraH)} hours plus ${store.fmt.hours(extraH)} extra. Edit extra hours`);
+    else hoursBtn.removeAttribute("aria-label");
     ui.setNumber($("#bill-total"), store.fmt.number(m.gross), animate);
 
     // No deductions yet → the empty design's "Taxes 0% -$0" row, still editable.
@@ -916,6 +957,7 @@
     clearTimeout(btn._copyTimer);
     btn._copyTimer = setTimeout(() => { swap.dataset.state = "copy"; }, 1400);
   });
+  $("#bill-hours-btn").addEventListener("click", () => modals.extraHours(view));
   billDeductions.addEventListener("click", (e) => {
     // Mobile, annotation 288:40288: the whole deductions box is clickable; a commission row opens commission.
     const target = e.target.closest(".receipt__edit") || (mobile.matches && e.target.closest(".receipt__row"));
@@ -1009,7 +1051,7 @@
     let n = 0;
     for (let i = 1; i <= last; i++) {
       const d = new Date(v.getFullYear(), v.getMonth(), i);
-      if (!state.weekends && (d.getDay() === 0 || d.getDay() === 6)) continue;
+      if (!weekendsOn(v) && (d.getDay() === 0 || d.getDay() === 6)) continue;
       if (!store.dayEntries(store.keyOf(d)).length) n++;
     }
     return n;
@@ -1070,9 +1112,12 @@
   /* ───── Store → screen ───── */
 
   store.subscribe((reason) => {
-    if (reason === "entries" || reason === "projects" || reason === "restore") refreshGrid();
-    if (reason === "weekends" || reason === "restore") renderWeekends();
-    if (reason === "weekends") { closeDayPopovers(); swapWeek(true); }
+    if (reason === "entries" || reason === "projects" || reason === "restore") {
+      // Hours on a weekend from elsewhere (sync, Reset) can bring this month's weekends in.
+      if (days.dataset.week !== (weekendsOn(view) ? "7" : "5")) { renderWeekends(); swapWeek(true); }
+      else refreshGrid();
+    }
+    if (reason === "restore") renderWeekends();
     renderMeta(true);
     renderBilling(true);
     renderProjects(true);
@@ -1086,6 +1131,26 @@
     }
   });
 
+  /* ───── Receipt note: a short cheer, new every day, the same all day (replaces "Grow up everyday!") ───── */
+
+  const CHEERS = [
+    "Small steps count.", "You showed up. That counts.", "Steady beats fast.", "Good work adds up.",
+    "Rest is part of the work.", "One day at a time.", "Proud of you today.", "Keep it simple.",
+    "Done is a good word.", "Your time is worth it.", "Breathe. You're on track.", "Little by little.",
+    "Today counts too.", "Slow is still forward.", "You've got this.", "Make it a good one.",
+    "Every hour is yours.", "Easy does it.", "Nice and steady.", "Trust your pace.",
+    "Do less, but better.", "Take a real break.", "Look how far you came.", "Water first, then work.",
+    "Finish one thing.", "Quiet focus wins.", "Your work matters.", "Be kind to yourself.",
+    "Fresh start today.", "Earned, not given.", "Nice work lately.", "Good enough is great.",
+    "Stand up, stretch.", "Pay yourself first.", "Clear head, clear work.", "Go gently today.",
+    "Tiny wins are wins.", "Enjoy the work.", "You run this.", "Today, just today.",
+  ];
+  {
+    const n = Math.floor(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) / 86400000);
+    // A fixed shuffle step (coprime with the list length): no repeats until the list runs out.
+    $("#barcode-note").textContent = CHEERS[(n * 17) % CHEERS.length];
+  }
+
   /* ───── Receipt barcode · Figma 93:1356 (width, or leftPad:width) ───── */
 
   $("#barcode").innerHTML = "8 3 6 8:6 8:1 2:1 2:2 4 8:6 5 2 1 1 3 8 12:6 3 6 8:6 8:1 2:1 2:2 4 8:6 5 2 1 1 3 12:6 5 5 5 2 1 1 2"
@@ -1093,8 +1158,6 @@
     .map((t) => { const [l, w] = t.includes(":") ? t.split(":") : [0, t]; return `<i style="inline-size:${w}px;margin-inline-start:${l}px"></i>`; })
     .join("");
 
-  days.dataset.week = state.weekends ? "7" : "5";
-  $(".days__head").innerHTML = LABELS.slice(0, state.weekends ? 7 : 5).map((l) => `<span>${l}</span>`).join("");
   renderHeader(1, false);
   renderGrid(1, false);
   renderWeekends();

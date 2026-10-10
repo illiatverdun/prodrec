@@ -684,6 +684,11 @@ body {
   box-shadow: inset 0 0 0 1px var(--color-green-300);
   color: var(--color-green-800);
 }
+/* Total hours badge: a button once the month has extra hours (opens Extra hours). */
+.receipt__hours { border: 0; cursor: default; transition: background-color var(--duration-quick) var(--ease-smooth-out); }
+.receipt__hours:not(:disabled) { cursor: pointer; }
+.receipt__hours:not(:disabled):hover { background: var(--color-green-200); }
+.receipt__hours:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--color-green-300), var(--effect-focus-ring); }
 
 /* The card ends where the code section starts (annotation 93:1287): the receipt hangs out by
    code section 46 + body padding 20 + zigzag 8.5, plus the card's own padding 16 and border 1. */
@@ -716,7 +721,7 @@ body {
 .receipt__sep { display: block; inline-size: 100%; block-size: 1px; margin-block: -0.5px; }
 
 .barcode { display: flex; flex-direction: column; gap: 6px; opacity: 0.7; }
-.barcode__bars { display: flex; gap: 2px; block-size: 20px; opacity: 0.5; }
+.barcode__bars { display: flex; justify-content: space-between; gap: 2px; block-size: 20px; opacity: 0.5; } /* fills the receipt edge to edge */
 .barcode__bars i { display: block; flex: none; block-size: 100%; background: var(--text-muted); }
 .barcode__note { margin: 0; color: var(--text-muted-foreground); font: var(--ts-body-sm-regular); text-align: center; }
 .receipt__edge { display: block; }
@@ -911,6 +916,32 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
   filter: blur(var(--icon-swap-blur));
   transform: scale(var(--icon-swap-start-scale));
 }
+/* Copy icon only while the Billing card is hovered or focused: it slides out from under the amount
+   (the slot clips it), with fade and blur on smooth-out, rows staggered. Hover out is quicker.
+   Touch screens have no hover, so the icon stays put there. */
+.copy-slot { display: inline-flex; overflow: clip; overflow-clip-margin: 2px; }
+@media (hover: hover) {
+  .copy-slot .copy-swap {
+    opacity: 0;
+    translate: 100% 0;
+    filter: blur(var(--motion-blur-small));
+    transition:
+      opacity var(--duration-quick) var(--ease-smooth-out),
+      translate var(--duration-quick) var(--ease-smooth-out),
+      filter var(--duration-quick) var(--ease-smooth-out);
+  }
+  .bill:is(:hover, :focus-within) .copy-slot .copy-swap,
+  .copy-slot .copy-swap[data-state="done"] {
+    opacity: 1;
+    translate: 0 0;
+    filter: none;
+    transition-duration: var(--duration-fast);
+    transition-delay: calc(var(--i, 0) * var(--stagger-stagger));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .copy-slot .copy-swap { translate: none !important; filter: none !important; }
+}
 
 .receipt__deductions { display: flex; flex-direction: column; gap: 16px; }
 .receipt__label { display: inline-flex; align-items: center; gap: 8px; }
@@ -1015,6 +1046,9 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
 .pm-avatar img { display: block; inline-size: 100%; block-size: 100%; border-radius: 12px; object-fit: cover; }
 .pm-avatar[aria-checked="true"] { box-shadow: 0 0 0 1px var(--color-pink-50), 0 0 0 4px var(--color-pink-700); }
 .pm-avatar:focus-visible { outline: 2px solid var(--border-accent); outline-offset: 6px; }
+/* Archived project: locked, the chosen picture stays readable. */
+.pm-avatar:disabled { cursor: not-allowed; }
+.pm-avatar:disabled:not([aria-checked="true"]) { opacity: 0.4; }
 .pm-upload { flex: none; }
 
 .pm-form { display: flex; flex-direction: column; gap: 12px; }
@@ -1053,7 +1087,9 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
 }
 .cur-select__code { flex: 1; text-align: start; }
 .cur-select img { margin: 5px; }
-.cur-select:hover { background: var(--bg-secondary-10); }
+.cur-select:hover:not(:disabled) { background: var(--bg-secondary-10); }
+.cur-select:disabled { color: var(--text-disabled); cursor: not-allowed; }
+.cur-select:disabled img { opacity: 0.4; }
 .cur-select:is([aria-expanded="true"], :focus-visible) { outline: none; box-shadow: inset 0 0 0 1px var(--border-accent); }
 
 /* Extra actions modals · Figma 321:54140 */
@@ -1172,6 +1208,9 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
 .hrow[data-selected] { gap: 4px; background: var(--bg-secondary-20); } /* annotation 292:113466: selected project */
 .hrow__name { display: flex; flex: 1; align-items: center; gap: 8px; min-inline-size: 0; padding: 6px 12px 6px 6px; }
 .hrow__avatar { flex: none; inline-size: 24px; block-size: 24px; border: 1px solid var(--border-subtle-20); border-radius: 8px; object-fit: cover; }
+.hrow__pic { display: block; flex: none; padding: 0; border: 0; border-radius: 8px; background: none; cursor: pointer; }
+.hrow__pic .hrow__avatar { display: block; }
+.hrow__pic:focus-visible { outline: none; box-shadow: var(--effect-focus-ring); }
 .hrow__label {
   flex: 1;
   min-inline-size: 0;
