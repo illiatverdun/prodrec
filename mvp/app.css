@@ -1537,10 +1537,10 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
   .cur__pop,
   .modal .cur__pop {
     position: fixed;
-    inset: auto 0 0;
+    inset: auto 0 var(--kb, 0px); /* above the keyboard while searching */
     z-index: 300;
     inline-size: auto;
-    block-size: min(420px, 70dvh);
+    block-size: min(420px, calc(var(--vv-h, 100dvh) * 0.7));
     padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
     border-radius: 32px 32px 0 0;
     max-inline-size: none;
@@ -1563,11 +1563,12 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
 
   /* Sheets · every modal rises from the bottom (Figma 288:46442, 288:44918); confirmations stay centred (288:46952).
      Annotation 288:46720: at most 640px tall, so a tap above still closes it. */
-  .modal-layer { place-items: end stretch; padding: 0; }
+  /* The layer follows the visual viewport (ui.js), so with the keyboard open the sheet sits right above it. */
+  .modal-layer { place-items: end stretch; padding: 0; inset: var(--vv-top, 0px) 0 auto; block-size: var(--vv-h, 100%); }
   .modal-scrim { -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
   .modal:not(.modal--confirm) {
     inline-size: 100%;
-    max-block-size: min(640px, calc(100dvh - 24px));
+    max-block-size: min(640px, calc(var(--vv-h, 100dvh) - 24px));
     padding-block-end: calc(20px + env(safe-area-inset-bottom));
     border-radius: 32px 32px 0 0;
     overflow-y: auto;

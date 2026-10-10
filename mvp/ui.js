@@ -90,6 +90,31 @@
     }
   }
 
+  /* Keyboard. Android Chrome (and iOS Safari) shrink only the visual viewport when the keyboard opens,
+     so a sheet fixed to the bottom of the page stays under it. The sheets follow the visual viewport
+     instead: --vv-top and --vv-h place the modal layer, --kb (how much the keyboard covers) lifts
+     sheets pinned to the bottom. Pinch zoom leaves them where they are. */
+  const vv = window.visualViewport;
+  if (vv) {
+    const rootStyle = document.documentElement.style;
+    let raf = 0;
+    const syncViewport = () => {
+      raf = 0;
+      const zoomed = vv.scale > 1.01;
+      const kb = zoomed ? 0 : Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      rootStyle.setProperty("--kb", `${Math.round(kb)}px`);
+      rootStyle.setProperty("--vv-top", `${zoomed ? 0 : Math.round(vv.offsetTop)}px`);
+      rootStyle.setProperty("--vv-h", zoomed ? "100dvh" : `${Math.round(vv.height)}px`);
+      // Keep the field being typed into in sight inside the now shorter sheet.
+      const a = document.activeElement;
+      if (kb > 0 && a && a.matches("input, textarea") && a.closest(".modal, .cur__pop")) a.scrollIntoView({ block: "nearest" });
+    };
+    const queue = () => { if (!raf) raf = requestAnimationFrame(syncViewport); };
+    vv.addEventListener("resize", queue);
+    vv.addEventListener("scroll", queue);
+    syncViewport();
+  }
+
   /* Every float on the page registers a closer, so opening one closes the rest. */
   const floats = new Set();
   const closeFloats = (except) => floats.forEach((fn) => fn !== except && fn());
