@@ -312,8 +312,16 @@
     if (onClose) onClose();
   }
 
-  // The scrim and every [data-close] button inside a dialog close it.
-  layer.addEventListener("click", (e) => { if (e.target.closest("[data-close]")) closeModal(); });
+  // The scrim and every [data-close] button inside a dialog close it. The scrim only for a press that began on it:
+  // a click that comes from the tap which opened the dialog (Android) lands on the fresh scrim and would close it at once.
+  let pressedScrim = false;
+  layer.addEventListener("pointerdown", (e) => { pressedScrim = e.target.classList.contains("modal-scrim"); }, true);
+  layer.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-close]");
+    if (!btn || (btn.classList.contains("modal-scrim") && !pressedScrim)) return;
+    pressedScrim = false;
+    closeModal();
+  });
 
   /* Mobile: dialogs are bottom sheets (app.css), and a downward swipe that starts on the head closes them.
      Centred confirmations (.modal--confirm) don't swipe. */

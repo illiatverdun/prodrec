@@ -227,12 +227,18 @@
     drag.active = false;
     const keys = rangeKeys();
     if (!keys.length) return;
-    if (mobile.matches) { clearRange(); openDay(keys[0]); return; }
+    if (mobile.matches) { clearRange(); return; } // the drawer opens on click, below
     if (store.active().length || archivedOn(keys).length) openHours(keys, drag.end);
     else openPop(keys, drag.end);
   });
   // A touch that turns into a scroll is cancelled by the browser: no selection, no drawer.
   document.addEventListener("pointercancel", () => { if (drag.active) clearRange(); });
+  // Mobile opens the day drawer on click, not on pointerup: Android fires the tap's click after pointerup,
+  // at the same spot, which by then is the drawer's scrim, and the drawer closed as soon as it opened.
+  grid.addEventListener("click", (e) => {
+    const cell = mobile.matches && e.target.closest(ACTIVE_DAY);
+    if (cell) openDay(cell.dataset.key);
+  });
 
   /* Place a popover centred under the anchor day, or above it when there is no room below. */
   function place(pop, cell) {
