@@ -203,21 +203,56 @@
       if (activeIdx >= 0) { input.setAttribute("aria-activedescendant", opts[activeIdx].id); opts[activeIdx].scrollIntoView({ block: "nearest" }); }
       else input.removeAttribute("aria-activedescendant");
     }
+    /* Phone: the picker never stacks over another sheet. Inside a sheet it takes the sheet's place
+       (Back returns to the form); from the page it opens as a sheet of its own. */
+    const home = { parent: pop.parentNode, next: pop.nextSibling };
+    const ownSheet = document.createElement("div");
+    ownSheet.className = "cur-sheet";
+    ownSheet.setAttribute("aria-label", "Currency");
+    let hostSheet = null;
+    function goHome() {
+      if (pop.parentNode !== home.parent) home.parent.insertBefore(pop, home.next);
+    }
     function set(open) {
       if (open === isOpen(pop)) return;
       if (open) {
         closeFloats(closer);
         input.value = "";
         render();
-        openFloat(pop);
-        if (phone.matches) lockPage(pop, true);
+        if (phone.matches) {
+          hostSheet = root.closest(".modal");
+          if (hostSheet) {
+            hostSheet.appendChild(pop);
+            hostSheet.classList.add("is-picking");
+            hostSheet.scrollTop = 0;
+          } else {
+            ownSheet.appendChild(pop);
+            openModal(ownSheet, { initialFocus: ".cur__title", onClose: () => set(false) });
+          }
+          pop.classList.add("is-open");
+          if (hostSheet) pop.querySelector(".cur__title").focus({ preventScroll: true });
+        } else {
+          goHome();
+          openFloat(pop);
+        }
         const sel = list.querySelector('[aria-selected="true"]');
         if (sel) sel.scrollIntoView({ block: "nearest" });
         // On a phone the picker is a sheet: focusing search would throw up the keyboard over six options.
         if (!phone.matches) input.focus({ preventScroll: true });
+      } else if (pop.parentNode === ownSheet) {
+        // The sheet slides away with the list in it; it is put back on the next open.
+        pop.classList.remove("is-open");
+        if (current && current.dialog === ownSheet) closeModal();
+      } else if (hostSheet) {
+        pop.classList.remove("is-open");
+        hostSheet.classList.remove("is-picking");
+        hostSheet.classList.add("is-unpicking");
+        setTimeout(((sheet) => () => sheet.classList.remove("is-unpicking"))(hostSheet), 250);
+        goHome();
+        hostSheet = null;
+        toggle.focus({ preventScroll: true });
       } else {
         closeFloat(pop);
-        lockPage(pop, false);
         if (pop.contains(document.activeElement)) toggle.focus({ preventScroll: true });
       }
       toggle.setAttribute("aria-expanded", String(open));
@@ -230,7 +265,7 @@
     input.setAttribute("aria-controls", listId);
     toggle.addEventListener("click", () => set(!isOpen(pop)));
     input.addEventListener("input", render);
-    pop.querySelector(".cur__scrim").addEventListener("click", () => set(false));
+    pop.querySelector(".cur__back").addEventListener("click", () => set(false));
     list.addEventListener("click", (e) => {
       const opt = e.target.closest("[data-code]");
       if (!opt) return;
@@ -245,17 +280,20 @@
       else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); set(false); }
       else if (e.key === "Tab") set(false);
     });
-    document.addEventListener("pointerdown", (e) => { if (!root.contains(e.target)) set(false); });
+    document.addEventListener("pointerdown", (e) => { if (!phone.matches && !root.contains(e.target)) set(false); });
     return { close: closer };
   }
 
   const pickerMarkup = (extraClass = "") => `
     <div class="ds-float ds-popover cur__pop ${extraClass}">
-      <span class="cur__scrim" aria-hidden="true"></span>
-      <label class="cur__search">
-        <img src="assets/search.svg" alt="">
-        <input class="cur__input" type="text" placeholder="Search currency" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-autocomplete="list" aria-label="Search currency">
-      </label>
+      <div class="cur__head">
+        <button class="ds-icon-btn cur__back" data-type="secondary" data-variant="ghost" type="button" aria-label="Back"><img src="assets/arrow-left.svg" alt="" width="20" height="20"></button>
+        <h2 class="cur__title" tabindex="-1">Currency</h2>
+        <label class="cur__search">
+          <img src="assets/search.svg" alt="">
+          <input class="cur__input" type="text" placeholder="Search currency" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-autocomplete="list" aria-label="Search currency">
+        </label>
+      </div>
       <div class="cur__list" role="listbox" aria-label="Currency"></div>
       <p class="ds-popover__empty" hidden>Nothing found</p>
     </div>`;
@@ -328,7 +366,7 @@
   const sheets = window.matchMedia("(max-width: 645px)");
   layer.addEventListener("pointerdown", (e) => {
     if (!current || !sheets.matches || current.dialog.classList.contains("modal--confirm")) return;
-    const head = e.target.closest(".modal__head, .dsheet__head");
+    const head = e.target.closest(".modal__head, .dsheet__head, .cur-sheet .cur__head");
     if (!head || !current.dialog.contains(head) || e.target.closest("button, input")) return;
     const dialog = current.dialog;
     const y0 = e.clientY;
@@ -367,7 +405,7 @@
   region.setAttribute("aria-live", "polite");
   document.body.appendChild(region);
 
-  function toast({ title, action = "Reset", onAction, duration = 6000 }) {
+  function toast({ title, action = "Reset", onAction, duration = 4000 }) {
     region.querySelectorAll(".ds-toast").forEach((t) => t._dismiss && t._dismiss());
     const el = document.createElement("div");
     el.className = "ds-toast toast";
@@ -395,6 +433,28 @@
     el.addEventListener("pointerleave", arm);
     const btn = el.querySelector(".ds-btn");
     if (btn) btn.addEventListener("click", () => { onAction(); dismiss(); });
+    // Phone: the toast sits at the top, and a swipe up takes it away.
+    el.addEventListener("pointerdown", (e) => {
+      if (!phone.matches || e.target.closest("button")) return;
+      const y0 = e.clientY;
+      let dy = 0;
+      el.setPointerCapture(e.pointerId);
+      clearTimeout(timer);
+      el.style.transition = "none";
+      const move = (ev) => { dy = Math.min(0, ev.clientY - y0) || (ev.clientY - y0) / 4; el.style.transform = `translateY(${dy}px)`; };
+      const up = () => {
+        el.removeEventListener("pointermove", move);
+        el.removeEventListener("pointerup", up);
+        el.removeEventListener("pointercancel", up);
+        el.style.transition = "";
+        // Carried on upward as it fades, instead of springing back to the closed position.
+        el.style.transform = dy < -24 ? `translateY(${dy - 40}px)` : "";
+        if (dy < -24) dismiss(); else arm();
+      };
+      el.addEventListener("pointermove", move);
+      el.addEventListener("pointerup", up);
+      el.addEventListener("pointercancel", up);
+    });
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("is-open")));
     arm();
     return dismiss;

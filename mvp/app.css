@@ -1314,7 +1314,10 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
   .barcode__bars { justify-content: center; }
 }
 
-.cur__scrim { display: none; }
+.cur__head { display: contents; }
+.cur__back, .cur__title { display: none; }
+@keyframes cur-swap { from { opacity: 0; transform: translateX(24px); } }
+@keyframes cur-swap-back { from { opacity: 0; transform: translateX(-24px); } }
 .arch { display: none; }
 
 /* ───── Mobile · Figma 277:42013 (empty), 288:39208 / 288:39090 (calendar, 5 / 7 days), 288:40202 (billing) ─────
@@ -1533,28 +1536,47 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
   .ds-icon-btn.arch__btn { flex: none; inline-size: 48px; block-size: 48px; border-radius: 16px; }
   .ds-icon-btn.arch__btn img { inline-size: 24px; block-size: 24px; }
 
-  /* Currency picker · no mobile frame in Figma. [?] The same search and list as a bottom sheet. */
+  /* Currency picker · no mobile frame in Figma. [?] It never stacks over another sheet (Illia, 2026-10-18):
+     from the page it is a sheet of its own (.cur-sheet); inside a sheet it takes that sheet's place and
+     Back returns to the form (.modal.is-picking). ui.js moves the list into the sheet. */
   .cur__pop,
   .modal .cur__pop {
-    position: fixed;
-    inset: auto 0 var(--kb, 0px); /* above the keyboard while searching */
-    z-index: 300;
+    position: static;
+    display: none;
+    gap: 12px;
     inline-size: auto;
-    block-size: min(420px, calc(var(--vv-h, 100dvh) * 0.7));
-    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
-    border-radius: 32px 32px 0 0;
     max-inline-size: none;
-    overflow: visible; /* the scrim sits above the sheet */
-    transform: translateY(100%);
+    block-size: auto;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
     opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition: none;
+    will-change: auto;
   }
-  .cur__pop.is-open { transform: none; }
-  .cur__pop.is-closing { transform: translateY(100%); opacity: 1; }
-  .cur__scrim { position: absolute; inset-inline: 0; inset-block-end: 100%; display: block; block-size: 100dvh; background: rgba(0, 0, 0, 0.06); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px); }
-  .bill:has(.cur__pop:is(.is-open, .is-closing)) { z-index: 80; } /* over the Nav bar */
+  .modal .cur__pop.is-open, .cur-sheet .cur__pop { display: flex; }
+  .modal.is-picking > :not(.cur__pop) { display: none; }
+  .cur__head { display: flex; align-items: center; gap: 8px; }
+  .cur__back { display: inline-flex; flex: none; }
+  .cur-sheet .cur__back { display: none; }
+  .cur__title { display: block; position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .cur__search { flex: 1; padding-block: 9px; }
+  /* Six currencies tall, so filtering doesn't make the sheet jump. */
+  .cur__list { flex: none; block-size: 260px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .modal.is-picking > .cur__pop { animation: cur-swap var(--duration-medium, 200ms) var(--ease-smooth-out, ease-out) both; }
+    .modal.is-unpicking > * { animation: cur-swap-back var(--duration-medium, 200ms) var(--ease-smooth-out, ease-out); }
+  }
 
-  /* Toasts sit above the Nav bar, full width, and over an open sheet. */
-  .ds-toast-region { z-index: 250; inset-inline: 16px; inset-block-end: calc(110px + env(safe-area-inset-bottom)); justify-items: stretch; }
+  /* Toasts drop from the top, full width, over an open sheet; a swipe up dismisses them (ui.js).
+     Bottom placement covered the day drawer they were about (Illia, 2026-10-18). */
+  .ds-toast-region { z-index: 250; inset-inline: 16px; inset-block: calc(var(--vv-top, 0px) + 12px + env(safe-area-inset-top)) auto; justify-items: stretch; }
+  .ds-toast-region > .ds-toast { --toast-distance: -24px; transform-origin: 50% 0; touch-action: none; }
+  .ds-toast-region .ds-toast[data-motion]:not(.is-open) { inset-block: 0 auto; }
   .ds-toast.toast { inline-size: 100%; min-inline-size: 0; }
   /* Mobile toast · Figma 277:48099: body text and an icon-only Reset. */
   .toast .ds-toast__title { font: var(--ts-body-md-medium); }
@@ -1574,6 +1596,9 @@ button.pitem__info:focus-visible { outline: none; box-shadow: var(--effect-focus
     overflow-y: auto;
     overflow-x: hidden; /* .dsheet__bg sticks out 39px; without this iOS pans the whole sheet sideways */
     overscroll-behavior: contain;
+    /* iOS Safari ends the visual viewport above its address bar, which floats over the page while the keyboard
+       is up, so the page showed through under the sheet. The sheet's colour runs on below its edge. */
+    box-shadow: inset 0 0 0 1px var(--border-default-60), var(--effect-popover-shadow-hard), 0 160px 0 0 var(--bg-card);
   }
   .t-modal:not(.modal--confirm),
   .t-modal.is-closing:not(.modal--confirm) { transform: translateY(100%); opacity: 1; }
